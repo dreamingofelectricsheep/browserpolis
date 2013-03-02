@@ -1,0 +1,110 @@
+<html>
+<head><title>The Depths Beckon</title>
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    void main(void) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+</script>
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec3 position;
+
+    uniform mat4 model;
+    uniform mat4 perspective;
+
+    void main(void) {
+        gl_Position = perspective * model * vec4(position, 1.0);
+    }
+</script>
+<script type="text/javascript">
+function depths(parent) {
+	this.canvas = document.createElement('canvas')
+	this.canvas.width = window.clientWidth
+	this.canvas.height = window.clientHeight
+
+	this.gl = this.canvas.getContext('experimental-webgl')
+	if(this.gl == undefined)
+		alert("No webgl!") 
+
+	parent.appendChild(this.canvas)
+}
+
+depths.prototype = {
+	draw: function(scene) {
+	},
+	vertex_shader: function(plaintext) {
+		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)
+	},
+	fragment_shader: function(plaintext) {
+		return new shader(this.gl, this.gl.FRAGMENT_SHADER, plaintext)
+	},
+	program: function(vertex, fragment) {
+		return new program(this.gl, vertex, fragment)
+	}
+}
+
+function entity() {
+	this.position = [0, 0, 0]
+	this.rotation = [0, 0, 0]
+	this.scale = [0, 0, 0]
+}
+
+function shader(gl, type, plaintext) {
+	this.shader = gl.createShader(type)
+	this.type = type
+	gl.shaderSource(this.shader, plaintext)
+	gl.compileShader(this.shader)
+
+	if (!gl.getShaderParameter(this.shader, gl.COMPILE_STATUS)) {
+		alert(gl.getShaderInfoLog(this.shader))
+	}
+}
+
+function program(gl, vertex, fragment) {
+	this.program = gl.createProgram()
+	gl.attachShader(this.program, vertex.shader)
+	gl.attachShader(this.program, fragment.shader)
+	gl.linkProgram(this.program)
+
+	if(!gl.getProgramParameter(this.program, gl.LINK_STATUS))
+		alert("Error during shader init.")
+
+	this.uniform = {}
+	this.attrib = {}
+
+	var t, i = 0
+	while(t = gl.getActiveUniform(this.program, i++)) {
+		this.uniform[t.name] = {
+			uniform: gl.getUniformLocation(this.program, t.name)
+		}
+	}
+
+	i = 0
+	while(t = gl.getActiveAttrib(this.program, i++)) {
+		this.attrib[t.name] = {
+			attrib: gl.getAttribLocation(this.program, t.name)
+		}
+	}
+}
+
+window.onload = function() {
+var body = document.getElementsByTagName('body')[0]
+
+var engine = new depths(body)
+
+var vertext = document.getElementById('shader-vs').innerHTML
+var fragtext = document.getElementById('shader-fs').innerHTML
+
+var vs = engine.vertex_shader(vertext)
+var fs = engine.fragment_shader(fragtext)
+
+var prog = engine.program(vs, fs)
+
+
+}
+</script>
+</head>
+<body>
+</body>
+</html>
