@@ -18,58 +18,9 @@
         gl_Position =  projection * view * model * vec4(position, 1.0);
     }
 </script>
+<script type="text/javascript" src="gl-matrix-min.js"></script>
 <script type="text/javascript">
-function mat4() {
-	this.value = new Float32Array(16)
-}
 
-mat4.prototype = {
-	identity: function() {
-		for(var i = 0; i < 16; i++)
-			this.value[i] = 0
-		for(var i = 0; i < 16; i += 5)
-			this.value[i] = 1
-	},
-	perspective: function(fovy, aspect, near, far) {
-		var f = 1.0 / Math.tan(fovy / 2),
-		nf = 1 / (near - far)
-
-		this.identity()
-
-		this.value[0] = f / aspect
-		this.value[5] = f
-		this.value[10] = (far + near) * nf
-		this.value[11] = -1
-		this.value[14] = (2 * far * near) * nf
-		this.value[15] = 0	
-	},
-	translation: function(x, y, z) {
-		this.identity()
-		this.value[3] = x
-		this.value[7] = y
-		this.value[11] = z
-	},
-	rotation: function(x, y, z) {
-		var c = Math.cos, s = Math.sin
-		var val = [
-			c(y)*c(z),
-			-c(x)*s(z)+s(x)*s(y)*c(z),
-			s(x)*s(z)+c(x)*s(y)*c(z),
-			0,
-			c(y)*s(z),
-			c(x)*c(z)+s(x)*s(y)*s(z),
-			-s(x)*c(z)+c(x)*s(y)*s(z),
-			0,
-			-s(y), s(x)*c(y), c(x)*c(y), 0,
-			0, 0, 0, 1]
-			
-		for(var i in val) this.value[i] = val[i]
-	},
-	mul: function(mat) {
-		
-
-	}	
-}
 
 function engine(parent) {
 	this.canvas = document.createElement('canvas')
@@ -86,26 +37,38 @@ function engine(parent) {
 	parent.appendChild(this.canvas)
 }
 
+function cameratransform(cam) {
+	var view = mat4.create()
+	mat4.identity(view)
+
+	mat4.translate(view, view, [0, 0, cam.distance])
+	mat4.rotateX(view, view, cam.rotation[0])
+	mat4.rotateZ(view, view, cam.rotation[2])
+	return view
+}
+
+
+
 engine.prototype = {
 	draw: function() {
 		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
 
 		for(var i in this.scene.objects) {
-
-			var mat = new mat4()
-			mat.identity()
-			var rot = new mat4()
-			var d = (new Date().getTime() % 5000) / 5000 * Math.PI * 2
-			rot.rotation(0, 0, d)
 			var o = this.scene.objects[i]
 			var prog = o.program
 
-			prog.uniform.model.set(rot)
-			prog.uniform.view.set(mat)
+			var view = cameratransform(this.scene.camera)
+
+			var model = mat4.create()
+			mat4.identity(model)
+			mat4.translate(model, model, o.position)
+
+			prog.uniform.model.set(model)
+			prog.uniform.view.set(view)
 			prog.uniform.projection.set(this.scene.camera.projection)
 
-			o.draw(prog.attrib.position)
+			o.model.draw(prog.attrib.position)
 		}
 
 		var that = this
@@ -160,7 +123,7 @@ function program(gl, vertex, fragment) {
 	while(t = gl.getActiveUniform(this.program, i++)) {
 		this.uniform[t.name] = {
 			uniform: gl.getUniformLocation(this.program, t.name),
-			set: function(mat) { gl.uniformMatrix4fv(this.uniform, false, mat.value) }
+			set: function(mat) { gl.uniformMatrix4fv(this.uniform, false, mat) }
 		}
 	}
 
@@ -215,22 +178,108 @@ var fs = eng.fragment_shader(fragtext)
 
 var prog = eng.program(vs, fs)
 
-var square = eng.buffer()
-square.data([
-	[0.0,  1.0,  -1.0],
-	[-1.0,  -1.0,  -1.0],
-	[1.0, -1.0,  -1.0]])
-square.program = prog
+var building= eng.buffer()
+building.data([
+	[-1, -1, 0],
+	[1, -1, 0],
+	[1, -1, 5],
+
+	[-1, -1, 0],
+	[-1, -1, 5],
+	[1, -1, 5],
+
+	
+	[-1, 1, 0],
+	[-1, -1, 0],
+	[-1, -1, 5],
+
+	[-1, -1, 5],
+	[-1, 1, 5],
+	[-1, 1, 0],
+
+	
+	[1, 1, 0],
+	[1, 1, 5],
+	[-1, 1, 5],
+
+	[-1, 1, 0],
+	[-1, 1, 5],
+	[1, 1, 0],
 
 
-var perspective = new mat4()
-perspective.perspective(90, window.innerWidth/window.innerHeight, 0.1, 1000)
+	[1, 1, 0],
+	[1, 1, 5],
+	[1, -1, 5],
+
+	[1, -1, 0],
+	[1, -1, 5],
+	[1, 1, 0],
+
+
+	[1, 1, 5],
+	[1, -1, 5],
+	[-1, 1, 5],
+
+	[1, -1, 5],
+	[-1, 1, 5],
+	[-1, -1, 5]
+])
+
+
+var perspective = mat4.create()
+mat4.perspective(perspective, 45, window.innerWidth/window.innerHeight, 0.1, 1000)
+
 
 eng.scene = {
 	camera: {
-		projection: perspective
+		distance: -20,
+		projection: perspective,
+		rotation: [-1, 0, 0]
 	},
-	objects: [square]
+	objects: []
+}
+
+window.onmousemove = function(e) {
+	var o = eng.scene.objects[0]
+
+	
+	var inv = mat4.create()
+	mat4.mul(inv, cameratransform(eng.scene.camera), eng.scene.camera.projection)
+	mat4.invert(inv, inv)
+
+	var v = [e.clientX/window.innerWidth, e.clientY/window.innerHeight, 0]
+	vec3.transformMat4(v, v, inv)
+	
+	
+	o.position[0] = v[0]*10
+	o.position[1] = -v[1]
+}
+
+window.onmousedown = function(e) {
+	var x = e.clientX
+
+	window.onmousemove = function(e) {
+		eng.scene.camera.rotation[2] += (e.clientX - x) / 500
+		x = e.clientX
+	}
+
+	window.onmouseup = function(e) {
+		window.onmousemove = undefined
+		window.onmouseup = undefined
+	}
+}
+
+window.onmousewheel = function(e) {
+	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - e.wheelDelta / 1000)
+}
+
+for(var i = 0; i < 10; i++) {
+	var e = new entity()
+	e.position[0] = i*4 - 5
+	e.model = building
+	e.program = prog
+
+	eng.scene.objects.push(e)
 }
 
 eng.draw()
