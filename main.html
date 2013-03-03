@@ -1,5 +1,5 @@
 <html>
-<head><title>The Depths Beckon</title>
+<head><title>Browser Ville</title>
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
 
@@ -10,28 +10,46 @@
 <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 position;
 
-    uniform mat4 model;
+	uniform mat4 model;
     uniform mat4 perspective;
 
     void main(void) {
-        gl_Position = perspective * model * vec4(position, 1.0);
+        gl_Position =  perspective * model * vec4(position, 1.0);
     }
 </script>
 <script type="text/javascript">
-function depths(parent) {
+function mat4() {
+	this.value = new Float32Array(16)
+}
+
+mat4.prototype = {
+	identity: function() {
+		for(var i = 0; i < 16; i++)
+			this.value[i] = 0
+		for(var i = 0; i < 16; i += 5)
+			this.value[i] = 1
+	}
+}
+
+function engine(parent) {
 	this.canvas = document.createElement('canvas')
-	this.canvas.width = window.clientWidth
-	this.canvas.height = window.clientHeight
+	this.canvas.width = window.innerWidth
+	this.canvas.height = window.innerHeight
 
 	this.gl = this.canvas.getContext('experimental-webgl')
 	if(this.gl == undefined)
 		alert("No webgl!") 
 
+	this.gl.enable(this.gl.DEPTH_TEST)
+	this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
+
 	parent.appendChild(this.canvas)
 }
 
-depths.prototype = {
+engine.prototype = {
 	draw: function(scene) {
+		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
+		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
 	},
 	vertex_shader: function(plaintext) {
 		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)
@@ -41,6 +59,9 @@ depths.prototype = {
 	},
 	program: function(vertex, fragment) {
 		return new program(this.gl, vertex, fragment)
+	},
+	buffer: function() {
+		return new buffer(this.gl)
 	}
 }
 
@@ -73,10 +94,13 @@ function program(gl, vertex, fragment) {
 	this.uniform = {}
 	this.attrib = {}
 
+	gl.useProgram(this.program)
+
 	var t, i = 0
 	while(t = gl.getActiveUniform(this.program, i++)) {
 		this.uniform[t.name] = {
-			uniform: gl.getUniformLocation(this.program, t.name)
+			uniform: gl.getUniformLocation(this.program, t.name),
+			set: function(mat) { gl.uniformMatrix4fv(this.uniform, false, mat.value) }
 		}
 	}
 
@@ -85,25 +109,78 @@ function program(gl, vertex, fragment) {
 		this.attrib[t.name] = {
 			attrib: gl.getAttribLocation(this.program, t.name)
 		}
+		gl.enableVertexAttribArray(this.attrib[t.name].attrib)
+	}
+}
+
+function buffer(gl, data) {
+	this.buffer = gl.createBuffer()
+	this.gl = gl
+	this.items = 0
+	this.subitems = 0
+
+}
+
+buffer.prototype = {
+	bind: function () {
+		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer)
+	},
+	data: function(d) {
+		this.bind()
+		this.items = d.length
+		this.subitems = d[0].length
+		var arr = []
+		for(var i in d) arr = arr.concat(d[i])
+		arr = new Float32Array(arr)
+
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, arr, this.gl.STATIC_DRAW)
+	},
+	draw: function(attrib) {
+		this.bind()
+		this.gl.vertexAttribPointer(attrib.attrib, this.subitems, this.gl.FLOAT, false, 0, 0)
+		this.gl.drawArrays(this.gl.TRIANGLES, 0, this.items)
 	}
 }
 
 window.onload = function() {
 var body = document.getElementsByTagName('body')[0]
 
-var engine = new depths(body)
+var eng = new engine(body)
 
 var vertext = document.getElementById('shader-vs').innerHTML
 var fragtext = document.getElementById('shader-fs').innerHTML
 
-var vs = engine.vertex_shader(vertext)
-var fs = engine.fragment_shader(fragtext)
+var vs = eng.vertex_shader(vertext)
+var fs = eng.fragment_shader(fragtext)
 
-var prog = engine.program(vs, fs)
+var prog = eng.program(vs, fs)
 
+var square = eng.buffer()
+square.data([
+	[0.0,  1.0,  0.0],
+	[-1.0,  -1.0,  0.0],
+	[1.0, -1.0,  0.0]])
+
+var mat = new mat4()
+mat.identity()
+
+prog.uniform.model.set(mat)
+prog.uniform.perspective.set(mat)
+
+eng.draw()
+square.draw(prog.attrib.position)
 
 }
 </script>
+<style type="text/css">
+body {
+	margin: 0;
+}
+canvas {
+	width: 100%;
+	height: 100%;
+}
+</style>
 </head>
 <body>
 </body>
