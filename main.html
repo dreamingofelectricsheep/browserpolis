@@ -11,10 +11,11 @@
     attribute vec3 position;
 
 	uniform mat4 model;
-    uniform mat4 perspective;
+	uniform mat4 view;
+    uniform mat4 projection;
 
     void main(void) {
-        gl_Position =  perspective * model * vec4(position, 1.0);
+        gl_Position =  projection * view * model * vec4(position, 1.0);
     }
 </script>
 <script type="text/javascript">
@@ -28,7 +29,46 @@ mat4.prototype = {
 			this.value[i] = 0
 		for(var i = 0; i < 16; i += 5)
 			this.value[i] = 1
-	}
+	},
+	perspective: function(fovy, aspect, near, far) {
+		var f = 1.0 / Math.tan(fovy / 2),
+		nf = 1 / (near - far)
+
+		this.identity()
+
+		this.value[0] = f / aspect
+		this.value[5] = f
+		this.value[10] = (far + near) * nf
+		this.value[11] = -1
+		this.value[14] = (2 * far * near) * nf
+		this.value[15] = 0	
+	},
+	translation: function(x, y, z) {
+		this.identity()
+		this.value[3] = x
+		this.value[7] = y
+		this.value[11] = z
+	},
+	rotation: function(x, y, z) {
+		var c = Math.cos, s = Math.sin
+		var val = [
+			c(y)*c(z),
+			-c(x)*s(z)+s(x)*s(y)*c(z),
+			s(x)*s(z)+c(x)*s(y)*c(z),
+			0,
+			c(y)*s(z),
+			c(x)*c(z)+s(x)*s(y)*s(z),
+			-s(x)*c(z)+c(x)*s(y)*s(z),
+			0,
+			-s(y), s(x)*c(y), c(x)*c(y), 0,
+			0, 0, 0, 1]
+			
+		for(var i in val) this.value[i] = val[i]
+	},
+	mul: function(mat) {
+		
+
+	}	
 }
 
 function engine(parent) {
@@ -47,9 +87,29 @@ function engine(parent) {
 }
 
 engine.prototype = {
-	draw: function(scene) {
+	draw: function() {
 		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
+
+		for(var i in this.scene.objects) {
+
+			var mat = new mat4()
+			mat.identity()
+			var rot = new mat4()
+			var d = (new Date().getTime() % 5000) / 5000 * Math.PI * 2
+			rot.rotation(0, 0, d)
+			var o = this.scene.objects[i]
+			var prog = o.program
+
+			prog.uniform.model.set(rot)
+			prog.uniform.view.set(mat)
+			prog.uniform.projection.set(this.scene.camera.projection)
+
+			o.draw(prog.attrib.position)
+		}
+
+		var that = this
+		requestAnimationFrame(function() { that.draw() })
 	},
 	vertex_shader: function(plaintext) {
 		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)
@@ -157,18 +217,23 @@ var prog = eng.program(vs, fs)
 
 var square = eng.buffer()
 square.data([
-	[0.0,  1.0,  0.0],
-	[-1.0,  -1.0,  0.0],
-	[1.0, -1.0,  0.0]])
+	[0.0,  1.0,  -1.0],
+	[-1.0,  -1.0,  -1.0],
+	[1.0, -1.0,  -1.0]])
+square.program = prog
 
-var mat = new mat4()
-mat.identity()
 
-prog.uniform.model.set(mat)
-prog.uniform.perspective.set(mat)
+var perspective = new mat4()
+perspective.perspective(90, window.innerWidth/window.innerHeight, 0.1, 1000)
+
+eng.scene = {
+	camera: {
+		projection: perspective
+	},
+	objects: [square]
+}
 
 eng.draw()
-square.draw(prog.attrib.position)
 
 }
 </script>
