@@ -3,318 +3,34 @@
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
 
+	varying vec3 vcolor;
+
     void main(void) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        gl_FragColor = vec4(vcolor, 1.0);
     }
 </script>
 <script id="shader-vs" type="x-shader/x-vertex">
     attribute vec3 position;
+    attribute vec3 color;
+    attribute vec3 normal;
 
 	uniform mat4 model;
 	uniform mat4 view;
     uniform mat4 projection;
 
+	varying vec3 vcolor;
+
     void main(void) {
+		vec3 sun = vec3(0.4, 0.2, 0.8);
+		sun = normalize(sun);
+		vec3 tnormal = (model * vec4(normal, 0.0)).xyz;
+		vcolor = color * max(dot(sun, tnormal), 0.0);
         gl_Position =  projection * view * model * vec4(position, 1.0);
     }
 </script>
 <script type="text/javascript" src="gl-matrix-min.js"></script>
-<script type="text/javascript">
-
-
-function engine(parent) {
-	this.canvas = document.createElement('canvas')
-	this.canvas.width = window.innerWidth
-	this.canvas.height = window.innerHeight
-
-	this.gl = this.canvas.getContext('experimental-webgl')
-	if(this.gl == undefined)
-		alert("No webgl!") 
-
-	this.gl.enable(this.gl.DEPTH_TEST)
-	this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
-
-	parent.appendChild(this.canvas)
-}
-
-function cameratransform(cam) {
-	var view = mat4.create()
-	mat4.identity(view)
-
-	mat4.translate(view, view, [0, 0, cam.distance])
-	mat4.rotateX(view, view, cam.rotation[0])
-	mat4.rotateZ(view, view, cam.rotation[2])
-	return view
-}
-
-
-
-engine.prototype = {
-	draw: function() {
-		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
-
-		for(var i in this.scene.objects) {
-			var o = this.scene.objects[i]
-			var prog = o.program
-
-			var view = cameratransform(this.scene.camera)
-
-			var model = mat4.create()
-			mat4.identity(model)
-			mat4.translate(model, model, o.position)
-
-			prog.uniform.model.set(model)
-			prog.uniform.view.set(view)
-			prog.uniform.projection.set(this.scene.camera.projection)
-
-			o.model.draw(prog.attrib.position)
-		}
-
-		var that = this
-		requestAnimationFrame(function() { that.draw() })
-	},
-	vertex_shader: function(plaintext) {
-		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)
-	},
-	fragment_shader: function(plaintext) {
-		return new shader(this.gl, this.gl.FRAGMENT_SHADER, plaintext)
-	},
-	program: function(vertex, fragment) {
-		return new program(this.gl, vertex, fragment)
-	},
-	buffer: function() {
-		return new buffer(this.gl)
-	}
-}
-
-function entity() {
-	this.position = [0, 0, 0]
-	this.rotation = [0, 0, 0]
-	this.scale = [0, 0, 0]
-}
-
-function shader(gl, type, plaintext) {
-	this.shader = gl.createShader(type)
-	this.type = type
-	gl.shaderSource(this.shader, plaintext)
-	gl.compileShader(this.shader)
-
-	if (!gl.getShaderParameter(this.shader, gl.COMPILE_STATUS)) {
-		alert(gl.getShaderInfoLog(this.shader))
-	}
-}
-
-function program(gl, vertex, fragment) {
-	this.program = gl.createProgram()
-	gl.attachShader(this.program, vertex.shader)
-	gl.attachShader(this.program, fragment.shader)
-	gl.linkProgram(this.program)
-
-	if(!gl.getProgramParameter(this.program, gl.LINK_STATUS))
-		alert("Error during shader init.")
-
-	this.uniform = {}
-	this.attrib = {}
-
-	gl.useProgram(this.program)
-
-	var t, i = 0
-	while(t = gl.getActiveUniform(this.program, i++)) {
-		this.uniform[t.name] = {
-			uniform: gl.getUniformLocation(this.program, t.name),
-			set: function(mat) { gl.uniformMatrix4fv(this.uniform, false, mat) }
-		}
-	}
-
-	i = 0
-	while(t = gl.getActiveAttrib(this.program, i++)) {
-		this.attrib[t.name] = {
-			attrib: gl.getAttribLocation(this.program, t.name)
-		}
-		gl.enableVertexAttribArray(this.attrib[t.name].attrib)
-	}
-}
-
-function buffer(gl, data) {
-	this.buffer = gl.createBuffer()
-	this.gl = gl
-	this.items = 0
-	this.subitems = 0
-
-}
-
-buffer.prototype = {
-	bind: function () {
-		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffer)
-	},
-	data: function(d) {
-		this.bind()
-		this.items = d.length
-		this.subitems = d[0].length
-		var arr = []
-		for(var i in d) arr = arr.concat(d[i])
-		arr = new Float32Array(arr)
-
-		this.gl.bufferData(this.gl.ARRAY_BUFFER, arr, this.gl.STATIC_DRAW)
-	},
-	draw: function(attrib) {
-		this.bind()
-		this.gl.vertexAttribPointer(attrib.attrib, this.subitems, this.gl.FLOAT, false, 0, 0)
-		this.gl.drawArrays(this.gl.TRIANGLES, 0, this.items)
-	}
-}
-
-window.onload = function() {
-var body = document.getElementsByTagName('body')[0]
-
-var eng = new engine(body)
-
-var vertext = document.getElementById('shader-vs').innerHTML
-var fragtext = document.getElementById('shader-fs').innerHTML
-
-var vs = eng.vertex_shader(vertext)
-var fs = eng.fragment_shader(fragtext)
-
-var prog = eng.program(vs, fs)
-
-var building= eng.buffer()
-building.data([
-	[-1, -1, 0],
-	[1, -1, 0],
-	[1, -1, 5],
-
-	[-1, -1, 0],
-	[-1, -1, 5],
-	[1, -1, 5],
-
-	
-	[-1, 1, 0],
-	[-1, -1, 0],
-	[-1, -1, 5],
-
-	[-1, -1, 5],
-	[-1, 1, 5],
-	[-1, 1, 0],
-
-	
-	[1, 1, 0],
-	[1, 1, 5],
-	[-1, 1, 5],
-
-	[-1, 1, 0],
-	[-1, 1, 5],
-	[1, 1, 0],
-
-
-	[1, 1, 0],
-	[1, 1, 5],
-	[1, -1, 5],
-
-	[1, -1, 0],
-	[1, -1, 5],
-	[1, 1, 0],
-
-
-	[1, 1, 5],
-	[1, -1, 5],
-	[-1, 1, 5],
-
-	[1, -1, 5],
-	[-1, 1, 5],
-	[-1, -1, 5]
-])
-
-
-var perspective = mat4.create()
-mat4.perspective(perspective, 45, window.innerWidth/window.innerHeight, 0.1, 1000)
-
-
-eng.scene = {
-	camera: {
-		distance: -20,
-		projection: perspective,
-		rotation: [-1, 0, 0]
-	},
-	objects: []
-}
-
-window.addEventListener('mousemove', function(e) {
-	var o = eng.scene.objects[0]
-
-	
-	var cam = cameratransform(eng.scene.camera)
-
-	var cx = -(e.clientX/window.innerWidth-0.5)*2
-	var cy =  -(e.clientY/window.innerHeight-0.5)*2
-
-	var aspect = window.innerWidth / window.innerHeight
-
-	var mat = mat4.create()
-	var conv = 45/90
-	mat4.identity(mat)
-	mat4.rotateX(mat, mat, cy*conv)
-	mat4.rotateY(mat, mat, cx*conv*aspect*0.8)
-	
-	
-	
-	var n = [0, 0, 0]
-	var v = [0, 0, -1]
-	mat4.invert(cam, cam)
-
-	vec3.transformMat4(v, v, mat)
-	vec3.transformMat4(v, v, cam)
-
-	vec3.transformMat4(n, n, cam)
-
-
-	var v2 = vec3.create()
-	vec3.sub(v2, v, n)
-
-	var x = -n[2] / v2[2]
-	vec3.scale(v2, v2, x)
-	vec3.add(v2, v2, n)
-	o.position = v2
-})
-
-window.addEventListener('click', function(e) {
-	var o  = eng.scene.objects[0]
-	var n = {}
-	for(var i in o) n[i] = o[i]
-	eng.scene.objects.push(n)
-})
-
-window.onmousedown = function(e) {
-	var x = e.clientX
-
-	window.onmousemove = function(e) {
-		eng.scene.camera.rotation[2] += (e.clientX - x) / 500
-		x = e.clientX
-	}
-
-	window.onmouseup = function(e) {
-		window.onmousemove = undefined
-		window.onmouseup = undefined
-	}
-}
-
-window.onmousewheel = function(e) {
-	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - e.wheelDelta / 1000)
-}
-
-for(var i = 0; i < 10; i++) {
-	var e = new entity()
-	e.position[0] = i*4 - 5
-	e.model = building
-	e.program = prog
-
-	eng.scene.objects.push(e)
-}
-
-eng.draw()
-
-}
-</script>
+<script type="text/javascript" src="engine.js"></script>
+<script type="text/javascript" src="main.js"></script>
 <style type="text/css">
 body {
 	margin: 0;
