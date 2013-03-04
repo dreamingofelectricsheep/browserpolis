@@ -24,12 +24,14 @@
 		vec3 sun = vec3(0.4, 0.2, 0.8);
 		sun = normalize(sun);
 		vec3 tnormal = (model * vec4(normal, 0.0)).xyz;
-		vcolor = color * max(dot(sun, tnormal), 0.0);
+		vcolor = color * max(dot(sun, tnormal), 1.0);
         gl_Position =  projection * view * model * vec4(position, 1.0);
     }
 </script>
 <script type="text/javascript" src="gl-matrix-min.js"></script>
 <script type="text/javascript" src="engine.js"></script>
+<script type="text/javascript" src="tags.js"></script>
+<script type="text/javascript" src="bezier.js"></script>
 <script type="text/javascript" src="main.js"></script>
 <style type="text/css">
 body {
@@ -38,6 +40,25 @@ body {
 canvas {
 	width: 100%;
 	height: 100%;
+}
+.button-box {
+	position: fixed;
+	bottom: -30px;
+	text-align: center;
+	width: 100%;
+}
+.button {
+	display: inline-block;
+	width: 80px;
+	height: 80px;
+	border-radius: 100%;
+	margin: 10px;
+	text-align: center;
+	background: #6889E3;
+	color: white;
+	font: 16px sans-serif;
+	line-height: 80px;
+	cursor: pointer;
 }
 </style>
 </head>

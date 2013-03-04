@@ -34,7 +34,7 @@ engine.prototype = {
 
 		for(var i in this.scene.objects) {
 			var o = this.scene.objects[i]
-			var prog = o.program
+			var prog = o.model.program
 
 			var view = cameratransform(this.scene.camera)
 
@@ -48,6 +48,7 @@ engine.prototype = {
 
 			o.model.draw(prog.attrib.position, prog.attrib.color, prog.attrib.normal)
 		}
+
 
 		var that = this
 		requestAnimationFrame(function() { that.draw() })
@@ -66,10 +67,9 @@ engine.prototype = {
 	}
 }
 
-function entity() {
+function anchor() {
 	this.position = [0, 0, 0]
 	this.rotation = [0, 0, 0]
-	this.scale = [0, 0, 0]
 }
 
 function shader(gl, type, plaintext) {

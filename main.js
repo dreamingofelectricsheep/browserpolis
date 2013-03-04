@@ -3,7 +3,14 @@
 window.onload = function() {
 var body = document.getElementsByTagName('body')[0]
 
+var roadmode = tags.div({ class: 'button' }, 'Road')
+var buildingmode = tags.div({ class: 'button' }, 'Building')
+
+
+
 var eng = new engine(body)
+
+body.appendChild(tags.div({ class: 'button-box' }, buildingmode, roadmode))
 
 var vertext = document.getElementById('shader-vs').innerHTML
 var fragtext = document.getElementById('shader-fs').innerHTML
@@ -117,6 +124,8 @@ buildingmodel.color = colorsbuf
 buildingmodel.vertex = building
 buildingmodel.normal= normalbuf
 
+buildingmodel.program = prog
+
 
 var perspective = mat4.create()
 mat4.perspective(perspective, 45, window.innerWidth/window.innerHeight, 0.1, 1000)
@@ -131,8 +140,7 @@ eng.scene = {
 	objects: []
 }
 
-window.addEventListener('mousemove', function(e) {
-	var o = eng.scene.objects[0]
+function unprojecttoground(e) {
 
 	
 	var cam = cameratransform(eng.scene.camera)
@@ -166,15 +174,45 @@ window.addEventListener('mousemove', function(e) {
 	var x = -n[2] / v2[2]
 	vec3.scale(v2, v2, x)
 	vec3.add(v2, v2, n)
-	o.position = v2
-})
+	return v2
+}
 
-window.addEventListener('click', function(e) {
-	var o  = eng.scene.objects[0]
-	var n = {}
-	for(var i in o) n[i] = o[i]
-	eng.scene.objects.push(n)
-})
+buildingmode.onclick = function() {
+	window.addEventListener('mousemove', function(e) {
+		var o = eng.scene.objects[0]
+		o.position = unprojecttoground(e)
+	})
+
+	window.addEventListener('click', function(e) {
+		var o  = eng.scene.objects[0]
+		var n = {}
+		for(var i in o) n[i] = o[i]
+		eng.scene.objects.push(n)
+	})
+}
+
+roadmode.onclick = function() {
+	window.addEventListener('click', function(e) {
+		var p = unprojecttoground(e)
+
+		var p2 = [p[0], p[1]]
+		b = new bezier(p2.slice(), p2.slice(), p2.slice())
+
+		window.addEventListener('mousemove', function(e) {
+			var p = unprojecttoground(e)
+			var p2 = [p[0], p[1]]
+
+			vec2.lerp(b.p[1], b.p[0], p2, 0.5)
+			b.p[2] = p2
+
+			var an = new anchor()
+			an.model = b.model(eng)
+			an.model.program = prog
+			eng.scene.objects.pop()
+			eng.scene.objects.push(an)
+		})
+	})
+}
 
 window.onmousedown = function(e) {
 	var x = e.clientX
@@ -195,13 +233,13 @@ window.onmousewheel = function(e) {
 }
 
 for(var i = 0; i < 10; i++) {
-	var e = new entity()
+	var e = new anchor()
 	e.position[0] = i*4 - 5
 	e.model = buildingmodel
-	e.program = prog
 
 	eng.scene.objects.push(e)
 }
+
 
 eng.draw()
 
