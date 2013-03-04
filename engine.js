@@ -46,7 +46,8 @@ engine.prototype = {
 
 
 		var that = this
-		requestAnimationFrame(function() { that.draw(time) })
+		var callback = window.requestAnimationFrame || window.mozRequestAnimationFrame
+		callback(function() { that.draw(time) })
 	},
 	vertex_shader: function(plaintext) {
 		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)

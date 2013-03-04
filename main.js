@@ -137,24 +137,20 @@ eng.scene = {
 function unprojecttoground(e) {
 
 	
-	var cam = eng.scene.camera.transform()
+	var camera = eng.scene.camera
+	var cam = camera.transform()
 
-	var cx = -(e.clientX/window.innerWidth-0.5)*2
-	var cy =  -(e.clientY/window.innerHeight-0.5)*2
-
-	var aspect = window.innerWidth / window.innerHeight
+	var x = (e.clientX/window.innerWidth-0.5)*2
+	var y = -(e.clientY/window.innerHeight-0.5)*2
 
 	var mat = mat4.create()
-	var conv = 45/90
-	mat4.identity(mat)
-	mat4.rotateX(mat, mat, cy*conv)
-	mat4.rotateY(mat, mat, cx*conv*aspect*0.8)
 	
+	mat4.invert(mat, camera.projection)
+	mat4.invert(cam, cam)
 	
 	
 	var n = [0, 0, 0]
-	var v = [0, 0, -1]
-	mat4.invert(cam, cam)
+	var v = [x, y, -1]
 
 	vec3.transformMat4(v, v, mat)
 	vec3.transformMat4(v, v, cam)
@@ -165,8 +161,8 @@ function unprojecttoground(e) {
 	var v2 = vec3.create()
 	vec3.sub(v2, v, n)
 
-	var x = -n[2] / v2[2]
-	vec3.scale(v2, v2, x)
+	var u = -n[2] / v2[2]
+	vec3.scale(v2, v2, u)
 	vec3.add(v2, v2, n)
 	return v2
 }
@@ -208,19 +204,24 @@ roadmode.onclick = function() {
 	})
 }
 
-window.onmousedown = function(e) {
+window.addEventListener('mousedown', function(e) {
+	if(e.button != 1) return;
 	var x = e.clientX
 
-	window.onmousemove = function(e) {
-		eng.scene.camera.rotation[2] += (e.clientX - x) / 500
-		x = e.clientX
+	var events = {
+		mousemove: function(e) {
+			eng.scene.camera.rotation[2] += (e.clientX - x) / 500
+			x = e.clientX
+		},
+		mouseup: function(e) {
+			for(var i in events)
+				window.removeEventListener(i, events[i])
+		}
 	}
 
-	window.onmouseup = function(e) {
-		window.onmousemove = undefined
-		window.onmouseup = undefined
-	}
-}
+	for(var i in events)
+		window.addEventListener(i, events[i]) 
+})
 
 window.onmousewheel = function(e) {
 	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - e.wheelDelta / 1000)
@@ -245,11 +246,13 @@ window.addEventListener('mousemove', function(e) {
 	if(e.clientX < 100) x = 1 - e.clientX / 100
 	if(e.clientX > window.innerWidth - 100) x = (window.innerWidth-e.clientX) / 100 - 1
 	if(e.clientY < 100) y = 1 - e.clientY / 100
-	if(e.clientY > window.innerHeight - 100) y = (window.innerHeight-e.clientY) / 100 - 1
+	if(e.clientY > window.innerHeight - 100 && Math.abs(e.clientX - window.innerWidth / 2) > 200) y = (window.innerHeight-e.clientY) / 100 - 1
 	c.velocity[0] = x
 	c.velocity[1] = - y
 
 })
+
+eng.canvas.oncontextmenu = function(e) { e.preventDefault() }
 
 
 }

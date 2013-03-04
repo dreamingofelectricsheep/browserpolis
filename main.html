@@ -51,18 +51,23 @@ canvas {
 	width: 100%;
 }
 .button {
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
 	display: inline-block;
 	width: 80px;
 	height: 80px;
 	border-radius: 100%;
 	margin: 10px;
 	text-align: center;
-	background: #6889E3;
+	background: #8AA2E3;
 	color: white;
 	font: 16px sans-serif;
 	line-height: 70px;
 	cursor: pointer;
-	box-shadow: 0 0 20px 2px blue;
+	box-shadow: 0 0 20px 2px blue, inset 0 0 15px 5px #6889E3;
+	text-shadow: 1px 1px 0 blue;
 	transition: -webkit-transform 1s;
 	-webkit-transition: -webkit-transform 1s;
 	-o-transition: -o-transform 1s;
