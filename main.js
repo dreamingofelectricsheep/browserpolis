@@ -108,7 +108,7 @@ var normal = [
 ]
 
 var color = []
-for(var i in vertex) color.push([0.0, 1.0, 1.0])
+for(var i in vertex) color.push([0.8, 0.7, 0.9])
 
 
 
@@ -127,23 +127,17 @@ buildingmodel.normal= normalbuf
 buildingmodel.program = prog
 
 
-var perspective = mat4.create()
-mat4.perspective(perspective, 45, window.innerWidth/window.innerHeight, 0.1, 1000)
 
 
 eng.scene = {
-	camera: {
-		distance: -20,
-		projection: perspective,
-		rotation: [-1, 0, 0]
-	},
+	camera: new camera(),
 	objects: []
 }
 
 function unprojecttoground(e) {
 
 	
-	var cam = cameratransform(eng.scene.camera)
+	var cam = eng.scene.camera.transform()
 
 	var cx = -(e.clientX/window.innerWidth-0.5)*2
 	var cy =  -(e.clientY/window.innerHeight-0.5)*2
@@ -242,6 +236,21 @@ for(var i = 0; i < 10; i++) {
 
 
 eng.draw()
+
+window.addEventListener('mousemove', function(e) {
+	var c = eng.scene.camera
+	var x = 0;
+	var y = 0;
+	
+	if(e.clientX < 100) x = 1 - e.clientX / 100
+	if(e.clientX > window.innerWidth - 100) x = (window.innerWidth-e.clientX) / 100 - 1
+	if(e.clientY < 100) y = 1 - e.clientY / 100
+	if(e.clientY > window.innerHeight - 100) y = (window.innerHeight-e.clientY) / 100 - 1
+	c.velocity[0] = x
+	c.velocity[1] = - y
+
+})
+
 
 }
 

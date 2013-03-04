@@ -10,25 +10,20 @@ function engine(parent) {
 		alert("No webgl!") 
 
 	this.gl.enable(this.gl.DEPTH_TEST)
-	this.gl.clearColor(0.0, 0.0, 0.0, 1.0)
+	this.gl.clearColor(0.8, 0.9, 0.7, 1.0)
 
 	parent.appendChild(this.canvas)
-}
-
-function cameratransform(cam) {
-	var view = mat4.create()
-	mat4.identity(view)
-
-	mat4.translate(view, view, [0, 0, cam.distance])
-	mat4.rotateX(view, view, cam.rotation[0])
-	mat4.rotateZ(view, view, cam.rotation[2])
-	return view
 }
 
 
 
 engine.prototype = {
-	draw: function() {
+	draw: function(last) {
+		
+		var time = new Date().getTime()
+		if(last == undefined) last = 0
+		this.scene.camera.update(time - last)
+
 		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
 
@@ -36,7 +31,7 @@ engine.prototype = {
 			var o = this.scene.objects[i]
 			var prog = o.model.program
 
-			var view = cameratransform(this.scene.camera)
+			var view = this.scene.camera.transform()
 
 			var model = mat4.create()
 			mat4.identity(model)
@@ -51,7 +46,7 @@ engine.prototype = {
 
 
 		var that = this
-		requestAnimationFrame(function() { that.draw() })
+		requestAnimationFrame(function() { that.draw(time) })
 	},
 	vertex_shader: function(plaintext) {
 		return new shader(this.gl, this.gl.VERTEX_SHADER, plaintext)

@@ -21,10 +21,12 @@
 	varying vec3 vcolor;
 
     void main(void) {
+		vec3 ambient = vec3(0.3, 0.4, 0.2);
 		vec3 sun = vec3(0.4, 0.2, 0.8);
 		sun = normalize(sun);
 		vec3 tnormal = (model * vec4(normal, 0.0)).xyz;
-		vcolor = color * max(dot(sun, tnormal), 1.0);
+		float t = dot(sun, tnormal) * 0.5 + 0.5;
+		vcolor = mix(ambient, color, t);
         gl_Position =  projection * view * model * vec4(position, 1.0);
     }
 </script>
@@ -32,6 +34,7 @@
 <script type="text/javascript" src="engine.js"></script>
 <script type="text/javascript" src="tags.js"></script>
 <script type="text/javascript" src="bezier.js"></script>
+<script type="text/javascript" src="camera.js"></script>
 <script type="text/javascript" src="main.js"></script>
 <style type="text/css">
 body {
@@ -43,7 +46,7 @@ canvas {
 }
 .button-box {
 	position: fixed;
-	bottom: -30px;
+	bottom: -40px;
 	text-align: center;
 	width: 100%;
 }
@@ -57,8 +60,19 @@ canvas {
 	background: #6889E3;
 	color: white;
 	font: 16px sans-serif;
-	line-height: 80px;
+	line-height: 70px;
 	cursor: pointer;
+	box-shadow: 0 0 20px 2px blue;
+	transition: -webkit-transform 1s;
+	-webkit-transition: -webkit-transform 1s;
+	-o-transition: -o-transform 1s;
+	-moz-transition: -moz-transform 1s;
+}
+.button:hover {
+	transform: scale(1.2);
+	-webkit-transform: scale(1.2);
+	-o-transform: scale(1.2);
+	-moz-transform: scale(1.2);
 }
 </style>
 </head>
