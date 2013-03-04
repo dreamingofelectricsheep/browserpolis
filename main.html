@@ -1,5 +1,5 @@
 <html>
-<head><title>Browser Ville</title>
+<head><title>Browserpolis</title>
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
 
@@ -239,21 +239,50 @@ eng.scene = {
 	objects: []
 }
 
-window.onmousemove = function(e) {
+window.addEventListener('mousemove', function(e) {
 	var o = eng.scene.objects[0]
 
 	
-	var inv = mat4.create()
-	mat4.mul(inv, cameratransform(eng.scene.camera), eng.scene.camera.projection)
-	mat4.invert(inv, inv)
+	var cam = cameratransform(eng.scene.camera)
 
-	var v = [e.clientX/window.innerWidth, e.clientY/window.innerHeight, 0]
-	vec3.transformMat4(v, v, inv)
+	var cx = -(e.clientX/window.innerWidth-0.5)*2
+	var cy =  -(e.clientY/window.innerHeight-0.5)*2
+
+	var aspect = window.innerWidth / window.innerHeight
+
+	var mat = mat4.create()
+	var conv = 45/90
+	mat4.identity(mat)
+	mat4.rotateX(mat, mat, cy*conv)
+	mat4.rotateY(mat, mat, cx*conv*aspect*0.8)
 	
 	
-	o.position[0] = v[0]*10
-	o.position[1] = -v[1]
-}
+	
+	var n = [0, 0, 0]
+	var v = [0, 0, -1]
+	mat4.invert(cam, cam)
+
+	vec3.transformMat4(v, v, mat)
+	vec3.transformMat4(v, v, cam)
+
+	vec3.transformMat4(n, n, cam)
+
+
+	var v2 = vec3.create()
+	vec3.sub(v2, v, n)
+
+	var x = -n[2] / v2[2]
+	vec3.scale(v2, v2, x)
+	vec3.add(v2, v2, n)
+	o.position = v2
+})
+
+window.addEventListener('click', function(e) {
+	var o  = eng.scene.objects[0]
+	var n = {}
+	for(var i in o) n[i] = o[i]
+	eng.scene.objects.push(n)
+})
 
 window.onmousedown = function(e) {
 	var x = e.clientX
