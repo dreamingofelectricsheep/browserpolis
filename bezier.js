@@ -46,8 +46,8 @@ bezier.prototype = {
 		var vertex = [], normal = [], color = []
 	
 		for(var i = 0; i < l; i++) {
-			var p1 = this.point(i/l),
-				p2 = this.point((i+1)/l)
+			var p2 = this.point(i/l),
+				p1 = this.point((i+1)/l)
 			
 			var up = [0, 0, 1]
 			var p = vec3.create()
@@ -64,7 +64,7 @@ bezier.prototype = {
 
 		for(var i in vertex) {
 			normal.push([0, 0, 1]) 
-			color.push([1, 0, 0]) 
+			color.push([0.4, 0.5, 0.8]) 
 		}
 
 		var m = new model()

@@ -178,19 +178,22 @@ var editmode = {
 	}
 }
 
-buildingmode.onclick = function() {
+buildingmode.onclick = function(e) {
+	var tmp;
 	var move = function(e) {
-		var o = eng.scene.objects[0]
-		o.position = unprojecttoground(e)
+		if(tmp == undefined) return
+		tmp.position = unprojecttoground(e)
 	}
 
 	var click = function(e) {
 		if(e.button != 0) return
-		var o  = eng.scene.objects[0]
-		var n = {}
-		for(var i in o) n[i] = o[i]
-		eng.scene.objects.push(n)
+		tmp = new anchor()
+		tmp.model = buildingmodel
+		move(e)
+		eng.scene.objects.push(tmp)
 	}
+
+	click(e)
 
 	editmode.set('click', click)
 	editmode.set('mousemove', move)
@@ -336,17 +339,12 @@ window.addEventListener('mousedown', function(e) {
 		window.addEventListener(i, events[i]) 
 })
 
-window.onmousewheel = function(e) {
-	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - e.wheelDelta / 1000)
+window.onmousewheel = window.onwheel = function(e) {
+	var d = e.wheelDelta
+	if(d == undefined) d = -e.deltaY * 30
+	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - d / 1000)
 }
 
-for(var i = 0; i < 10; i++) {
-	var e = new anchor()
-	e.position[0] = i*4 - 5
-	e.model = buildingmodel
-
-	eng.scene.objects.push(e)
-}
 
 
 eng.draw()
