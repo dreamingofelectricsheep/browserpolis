@@ -111,21 +111,37 @@ var color = []
 for(var i in vertex) color.push([0.8, 0.7, 0.9])
 
 
+function buildingfactory() {
+	var mat = mat4.create()
+	mat4.identity(mat)
+	mat4.scale(mat, mat, [Math.random() * 0.5 + 0.8,
+		Math.random() * 0.5 + 0.8,
+		Math.random() * 0.5 + 0.8])
 
-var building= eng.buffer()
-building.data(vertex)
-var colorsbuf = eng.buffer()
-colorsbuf.data(color)
-var normalbuf = eng.buffer()
-normalbuf.data(normal)
 
-var buildingmodel = new model()
-buildingmodel.color = colorsbuf
-buildingmodel.vertex = building
-buildingmodel.normal= normalbuf
+	var vert = []
+	for(var i in vertex) {
+		var v = [0, 0, 0]
+		vec3.transformMat4(v, vertex[i], mat)
+		vert.push(v)
+	}
 
-buildingmodel.program = prog
+	var building= eng.buffer()
+	building.data(vert)
+	var colorsbuf = eng.buffer()
+	colorsbuf.data(color)
+	var normalbuf = eng.buffer()
+	normalbuf.data(normal)
 
+	var buildingmodel = new model()
+	buildingmodel.color = colorsbuf
+	buildingmodel.vertex = building
+	buildingmodel.normal= normalbuf
+
+	buildingmodel.program = prog
+
+	return buildingmodel
+}
 
 
 
@@ -175,11 +191,18 @@ var editmode = {
 	},
 	unset: function(type) {
 		eng.canvas.removeEventListener(type, this[type])	
-	}
+	},
+	leave: function() {}
 }
 
 buildingmode.onclick = function(e) {
-	var tmp;
+	editmode.leave()
+	editmode.leave = function() { 
+		if(tmp != undefined) eng.scene.objects.pop()
+		this.leave = function() {}
+	}
+
+	var tmp = undefined;
 	var move = function(e) {
 		if(tmp == undefined) return
 		tmp.position = unprojecttoground(e)
@@ -188,7 +211,7 @@ buildingmode.onclick = function(e) {
 	var click = function(e) {
 		if(e.button != 0) return
 		tmp = new anchor()
-		tmp.model = buildingmodel
+		tmp.model = buildingfactory()
 		move(e)
 		eng.scene.objects.push(tmp)
 	}
@@ -201,6 +224,7 @@ buildingmode.onclick = function(e) {
 
 window.addEventListener('keydown', function(e) {
 	if(e.keyCode == 27) {
+		editmode.leave()
 		editmode.unset('click')
 		editmode.unset('mousemove')
 	}
@@ -246,8 +270,15 @@ function atan2(x, y) {
 }
 
 
-roadmode.onclick = function() {
+roadmode.onclick = function(e) {
+	editmode.leave()
 	var curve, emar;
+
+	editmode.leave = function() {
+		eng.scene.objects.pop()
+		this.leave = function() {}
+	}
+	
 
 	var curvemove = function(e) {
 		var p = unprojecttoground(e)
@@ -274,6 +305,8 @@ roadmode.onclick = function() {
 		if(e.button != 0) return
 		editmode.unset('mousemove')
 		editmode.set('click', click)
+	
+		start(e)
 	}
 
 	var begincurve = function(e) {
@@ -305,19 +338,28 @@ roadmode.onclick = function() {
 
 		var p2 = [p[0], p[1]]
 		curve = new bezier(p2.slice(), p2.slice(), p2.slice())
-
-		emar = new anchor()
-		emar.model = marker
-		emar.position = p
-
-		eng.scene.objects.push(emar)
 		
 		editmode.set('click', begincurve)
 		editmode.set('mousemove', directionmove)
 	}
+
+	var positionmove = function(e) {
+		emar.position = unprojecttoground(e)
+	}
+
+	var start = function(e) {
+		emar = new anchor()
+		emar.model = marker
+		positionmove(e)
+
+		eng.scene.objects.push(emar)
+
+		editmode.set('click', click)
+		editmode.set('mousemove', positionmove)
+	}
 	
-	editmode.set('click', click)
-	editmode.unset('mousemove', directionmove)
+	start(e)
+
 }
 
 window.addEventListener('mousedown', function(e) {
@@ -346,6 +388,15 @@ window.onmousewheel = window.onwheel = function(e) {
 }
 
 
+
+for(var i = 0; i < 10; i++) {
+		var tmp = new anchor()
+		tmp.model = buildingfactory()
+		tmp.position[0] = Math.random() * 15
+		tmp.position[1] = Math.random() * 15
+		eng.scene.objects.push(tmp)
+}
+	
 
 eng.draw()
 
