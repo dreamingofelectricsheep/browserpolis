@@ -11,7 +11,7 @@ function camera() {
 camera.prototype = {
 	update: function(elapsed) {
 		var v = vec2.clone(this.velocity)
-		vec2.scale(v, v, - this.distance * elapsed / 1000)
+		vec2.scale(v, v, - this.distance * elapsed / 1000 * 2)
 		var mat = mat2.create()
 		mat2.identity(mat)
 		mat2.rotate(mat, mat, this.rotation[2])

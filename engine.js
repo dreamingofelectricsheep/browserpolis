@@ -6,8 +6,8 @@ function engine(parent) {
 	this.canvas.height = window.innerHeight
 
 	this.gl = this.canvas.getContext('experimental-webgl')
-	if(this.gl == undefined)
-		alert("No webgl!") 
+	if(this.gl == undefined) 
+		parent.appendChild(tags.div({ class: 'error' }, "Looks like your browser does not support WebGL. Sucks to be you."))
 
 	this.gl.enable(this.gl.DEPTH_TEST)
 	this.gl.clearColor(0.8, 0.9, 0.7, 1.0)
@@ -36,6 +36,7 @@ engine.prototype = {
 			var model = mat4.create()
 			mat4.identity(model)
 			mat4.translate(model, model, o.position)
+			mat4.rotateZ(model, model, o.rotation[2])
 
 			prog.uniform.model.set(model)
 			prog.uniform.view.set(view)

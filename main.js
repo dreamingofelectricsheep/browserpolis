@@ -167,41 +167,154 @@ function unprojecttoground(e) {
 	return v2
 }
 
+var editmode = {
+	set: function(type, fn) {
+		this.unset(type)
+		eng.canvas.addEventListener(type, fn)
+		this[type] = fn
+	},
+	unset: function(type) {
+		eng.canvas.removeEventListener(type, this[type])	
+	}
+}
+
 buildingmode.onclick = function() {
-	window.addEventListener('mousemove', function(e) {
+	var move = function(e) {
 		var o = eng.scene.objects[0]
 		o.position = unprojecttoground(e)
-	})
+	}
 
-	window.addEventListener('click', function(e) {
+	var click = function(e) {
+		if(e.button != 0) return
 		var o  = eng.scene.objects[0]
 		var n = {}
 		for(var i in o) n[i] = o[i]
 		eng.scene.objects.push(n)
-	})
+	}
+
+	editmode.set('click', click)
+	editmode.set('mousemove', move)
 }
 
+window.addEventListener('keydown', function(e) {
+	if(e.keyCode == 27) {
+		editmode.unset('click')
+		editmode.unset('mousemove')
+	}
+})
+
+var mvert = [
+	[-1, -1, 0],
+	[1, -1, 0],
+	[0, 2, 0]
+]
+
+var mcol = [
+	[0.4, 1.0, 0.3],
+	[0.4, 1.0, 0.3],
+	[0.4, 1.0, 0.3]
+]
+
+var mnor = [
+	[0, 0, 1],
+	[0, 0, 1],
+	[0, 0, 1]
+]
+
+var marker = new model()
+marker.vertex = eng.buffer()
+marker.color= eng.buffer()
+marker.normal= eng.buffer()
+
+marker.color.data(mcol)
+marker.normal.data(mnor)
+marker.vertex.data(mvert)
+
+marker.program = prog
+
+
+function atan2(x, y) {
+	if(x > 0) return Math.atan(y/x)
+	if(y >= 0 && x < 0) return Math.atan(y/x) + Math.PI
+	if(y < 0 && x < 0) return Math.atan(y/x) - Math.PI
+	if(y > 0 && x == 0) return Math.PI / 2
+	if(y < 0 && x == 0) return - Math.PI / 2
+	return 0
+}
+
+
 roadmode.onclick = function() {
-	window.addEventListener('click', function(e) {
+	var curve, emar;
+
+	var curvemove = function(e) {
+		var p = unprojecttoground(e)
+		var p2 = [p[0], p[1]]
+
+		var dir = [0, 20]
+		var mat = mat2.create()
+		mat2.identity(mat)
+		mat2.rotate(mat, mat, -emar.rotation[2])
+		vec2.transformMat2(dir, dir, mat)
+		vec2.add(dir, dir, emar.position)
+
+		curve.p[1] = dir
+		curve.p[2] = p2
+
+		var an = new anchor()
+		an.model = curve.model(eng)
+		an.model.program = prog
+		eng.scene.objects.pop()
+		eng.scene.objects.push(an)
+	}
+
+	var doneclick = function(e) {
+		if(e.button != 0) return
+		editmode.unset('mousemove')
+		editmode.set('click', click)
+	}
+
+	var begincurve = function(e) {
+		if(e.button != 0) return
+
 		var p = unprojecttoground(e)
 
 		var p2 = [p[0], p[1]]
-		b = new bezier(p2.slice(), p2.slice(), p2.slice())
 
-		window.addEventListener('mousemove', function(e) {
-			var p = unprojecttoground(e)
-			var p2 = [p[0], p[1]]
+		editmode.set('mousemove', curvemove)
+		editmode.set('click', doneclick)
+	}
 
-			vec2.lerp(b.p[1], b.p[0], p2, 0.5)
-			b.p[2] = p2
+	var directionmove = function(e) {
+		var p = unprojecttoground(e)
 
-			var an = new anchor()
-			an.model = b.model(eng)
-			an.model.program = prog
-			eng.scene.objects.pop()
-			eng.scene.objects.push(an)
-		})
-	})
+		var dir = vec2.create()
+		vec2.sub(dir, emar.position, p)
+		vec2.normalize(dir,dir)
+		
+		var angle = atan2(dir[0], dir[1]) + Math.PI / 2
+		emar.rotation[2] = angle
+	}
+	
+	var click = function(e) {
+		if(e.button != 0) return
+
+		var p = unprojecttoground(e)
+
+		var p2 = [p[0], p[1]]
+		curve = new bezier(p2.slice(), p2.slice(), p2.slice())
+
+		emar = new anchor()
+		emar.model = marker
+		emar.position = p
+
+		eng.scene.objects.push(emar)
+		
+		editmode.set('click', begincurve)
+		editmode.set('mousemove', directionmove)
+	}
+	
+	editmode.set('click', click)
+	editmode.unset('mousemove', directionmove)
 }
 
 window.addEventListener('mousedown', function(e) {
