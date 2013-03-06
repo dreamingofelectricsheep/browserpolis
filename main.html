@@ -1,5 +1,9 @@
 <html>
 <head><title>Browserpolis</title>
+<meta name="keywords" content="webgl, simcity, city, building, simulation, simulator, browser, online,
+	game, urban, mayor, town, 3d">
+<meta name="description" content="Dive into an exciting world of 3d city building and town simulation. 
+	Do you have what it takes to be a mayor of a sprawling urban polis?">
 <script id="shader-fs" type="x-shader/x-fragment">
     precision mediump float;
 
@@ -59,19 +63,26 @@ canvas {
 	width: 80px;
 	height: 80px;
 	border-radius: 100%;
+	border: solid 5px #C1BAE6;
 	margin: 10px;
 	text-align: center;
-	background: #8AA2E3;
 	color: white;
-	font: 16px sans-serif;
+	font: bold 16px sans-serif;
 	line-height: 70px;
 	cursor: pointer;
-	box-shadow: 0 0 20px 2px blue, inset 0 0 15px 5px #6889E3;
-	text-shadow: 1px 1px 0 blue;
+	box-shadow: 0 0 20px 2px blue;
+	text-shadow: 1px 1px  blue;
 	transition: -webkit-transform 1s;
 	-webkit-transition: -webkit-transform 1s;
 	-o-transition: -o-transform 1s;
 	-moz-transition: -moz-transform 1s;
+	background-image: -ms-linear-gradient(top, #7C91CC 0%, #C1BAE6 60%);
+	background-image: -moz-linear-gradient(top, #7C91CC 0%, #C1BAE6 60%);
+	background-image: -o-linear-gradient(top, #7C91CC 0%, #C1BAE6 60%);
+	background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #7C91CC), color-stop(0.6, #C1BAE6));
+	background-image: -webkit-linear-gradient(top, #7C91CC 0%, #C1BAE6 60%);
+	background-image: linear-gradient(to bottom, #7C91CC 0%, #C1BAE6 60%);
+
 }
 .button:hover {
 	transform: scale(1.2);

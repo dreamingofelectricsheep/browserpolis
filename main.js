@@ -21,7 +21,47 @@ var fs = eng.fragment_shader(fragtext)
 var prog = eng.program(vs, fs)
 
 
-var vertex = [
+var building_color= []
+for(var i = 0; i < 30; i++) building_color.push([0.8, 0.7, 0.9])
+
+var building_normal = [
+	[0, -1, 0],
+	[0, -1, 0],
+	[0, -1, 0],
+	[0, -1, 0],
+	[0, -1, 0],
+	[0, -1, 0],
+
+	[-1, 0, 0],
+	[-1, 0, 0],
+	[-1, 0, 0],
+	[-1, 0, 0],
+	[-1, 0, 0],
+	[-1, 0, 0],
+
+	[0, 1, 0],
+	[0, 1, 0],
+	[0, 1, 0],
+	[0, 1, 0],
+	[0, 1, 0],
+	[0, 1, 0],
+
+	[1, 0, 0],
+	[1, 0, 0],
+	[1, 0, 0],
+	[1, 0, 0],
+	[1, 0, 0],
+	[1, 0, 0],
+
+	[0, 0, 1],
+	[0, 0, 1],
+	[0, 0, 1],
+	[0, 0, 1],
+	[0, 0, 1],
+	[0, 0, 1]
+]
+
+var building_vertex = [
 	[-1, -1, 0],
 	[1, -1, 0],
 	[1, -1, 5],
@@ -70,45 +110,6 @@ var vertex = [
 	[-1, 1, 5],
 	[-1, -1, 5]
 ]
-var normal = [
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1]
-]
-
-var color = []
-for(var i in vertex) color.push([0.8, 0.7, 0.9])
 
 
 function buildingfactory() {
@@ -120,23 +121,17 @@ function buildingfactory() {
 
 
 	var vert = []
-	for(var i in vertex) {
+	for(var i in building_vertex) {
 		var v = [0, 0, 0]
-		vec3.transformMat4(v, vertex[i], mat)
+		vec3.transformMat4(v, building_vertex[i], mat)
 		vert.push(v)
 	}
 
-	var building= eng.buffer()
-	building.data(vert)
-	var colorsbuf = eng.buffer()
-	colorsbuf.data(color)
-	var normalbuf = eng.buffer()
-	normalbuf.data(normal)
 
-	var buildingmodel = new model()
-	buildingmodel.color = colorsbuf
-	buildingmodel.vertex = building
-	buildingmodel.normal= normalbuf
+	var buildingmodel = eng.model({
+		vertex: vert,
+		normal: building_normal,
+		color: building_color })
 
 	buildingmodel.program = prog
 
@@ -230,35 +225,28 @@ window.addEventListener('keydown', function(e) {
 	}
 })
 
-var mvert = [
-	[-1, -1, 0],
-	[1, -1, 0],
-	[0, 2, 0]
-]
 
-var mcol = [
-	[0.4, 1.0, 0.3],
-	[0.4, 1.0, 0.3],
-	[0.4, 1.0, 0.3]
-]
+var marker_model = eng.model({
+	vertex: [
+		[-1, -1, 0],
+		[1, -1, 0],
+		[0, 2, 0]
+	],
+	color: [
+		[0.4, 1.0, 0.3],
+		[0.4, 1.0, 0.3],
+		[0.4, 1.0, 0.3]
+	], 
+	normal: [
+		[0, 0, 1],
+		[0, 0, 1],
+		[0, 0, 1]
+	]})
 
-var mnor = [
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1]
-]
+marker_model.program = prog
 
-var marker = new model()
-marker.vertex = eng.buffer()
-marker.color= eng.buffer()
-marker.normal= eng.buffer()
 
-marker.color.data(mcol)
-marker.normal.data(mnor)
-marker.vertex.data(mvert)
-
-marker.program = prog
-
+var quad_model = new model()
 
 function atan2(x, y) {
 	if(x > 0) return Math.atan(y/x)
@@ -272,7 +260,7 @@ function atan2(x, y) {
 
 roadmode.onclick = function(e) {
 	editmode.leave()
-	var curve, emar;
+	var curve, marker;
 
 	editmode.leave = function() {
 		eng.scene.objects.pop()
@@ -287,9 +275,9 @@ roadmode.onclick = function(e) {
 		var dir = [0, 20]
 		var mat = mat2.create()
 		mat2.identity(mat)
-		mat2.rotate(mat, mat, -emar.rotation[2])
+		mat2.rotate(mat, mat, -marker.rotation[2])
 		vec2.transformMat2(dir, dir, mat)
-		vec2.add(dir, dir, emar.position)
+		vec2.add(dir, dir, marker.position)
 
 		curve.p[1] = dir
 		curve.p[2] = p2
@@ -303,8 +291,6 @@ roadmode.onclick = function(e) {
 
 	var doneclick = function(e) {
 		if(e.button != 0) return
-		editmode.unset('mousemove')
-		editmode.set('click', click)
 	
 		start(e)
 	}
@@ -324,14 +310,14 @@ roadmode.onclick = function(e) {
 		var p = unprojecttoground(e)
 
 		var dir = vec2.create()
-		vec2.sub(dir, emar.position, p)
+		vec2.sub(dir, marker.position, p)
 		vec2.normalize(dir,dir)
 		
 		var angle = atan2(dir[0], dir[1]) + Math.PI / 2
-		emar.rotation[2] = angle
+		marker.rotation[2] = angle
 	}
 	
-	var click = function(e) {
+	var positionset = function(e) {
 		if(e.button != 0) return
 
 		var p = unprojecttoground(e)
@@ -344,17 +330,17 @@ roadmode.onclick = function(e) {
 	}
 
 	var positionmove = function(e) {
-		emar.position = unprojecttoground(e)
+		marker.position = unprojecttoground(e)
 	}
 
 	var start = function(e) {
-		emar = new anchor()
-		emar.model = marker
+		marker = new anchor()
+		marker.model = marker_model
 		positionmove(e)
 
-		eng.scene.objects.push(emar)
+		eng.scene.objects.push(marker)
 
-		editmode.set('click', click)
+		editmode.set('click', positionset)
 		editmode.set('mousemove', positionmove)
 	}
 	

@@ -42,7 +42,10 @@ engine.prototype = {
 			prog.uniform.view.set(view)
 			prog.uniform.projection.set(this.scene.camera.projection)
 
-			o.model.draw(prog.attrib.position, prog.attrib.color, prog.attrib.normal)
+			o.model.draw({
+				vertex: prog.attrib.position, 
+				color: prog.attrib.color, 
+				normal: prog.attrib.normal })
 		}
 
 
@@ -59,8 +62,11 @@ engine.prototype = {
 	program: function(vertex, fragment) {
 		return new program(this.gl, vertex, fragment)
 	},
-	buffer: function() {
-		return new buffer(this.gl)
+	buffer: function(content, data) {
+		return new buffer(this.gl, data)
+	},
+	model: function(buffers) {
+		return new model(this.gl, buffers)
 	}
 }
 
@@ -117,6 +123,8 @@ function buffer(gl, data) {
 	this.items = 0
 	this.subitems = 0
 
+	if(data != undefined)
+		this.data(data)
 }
 
 buffer.prototype = {
@@ -132,21 +140,27 @@ buffer.prototype = {
 		arr = new Float32Array(arr)
 
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, arr, this.gl.STATIC_DRAW)
-	},
+	}
 
 }
 
-function model() { }
+function model(gl, buffers) { 
+	this.gl = gl
+	this.buffers = {}
+
+	for(var i in buffers)
+		this.buffers[i] = new buffer(gl, buffers[i])
+}
+
 model.prototype = {
-	draw: function(vertex, color) {
-		var gl = this.vertex.gl
-		var list = ['vertex', 'color', 'normal']
-		for(var i in list) {
-			this[list[i]].bind()
-			gl.vertexAttribPointer(arguments[i].attrib, this[list[i]].subitems, gl.FLOAT, false, 0, 0)
+	draw: function(attr) {
+		var gl = this.gl
+		for(var i in this.buffers) {
+			this.buffers[i].bind()
+			gl.vertexAttribPointer(attr[i].attrib, this.buffers[i].subitems, gl.FLOAT, false, 0, 0)
 		}
 
-		gl.drawArrays(gl.TRIANGLES, 0, this.vertex.items)
+		gl.drawArrays(gl.TRIANGLES, 0, this.buffers.vertex.items)
 	}
 
 }

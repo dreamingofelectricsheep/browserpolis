@@ -67,13 +67,8 @@ bezier.prototype = {
 			color.push([0.4, 0.5, 0.8]) 
 		}
 
-		var m = new model()
-		m.vertex = eng.buffer()
-		m.vertex.data(vertex)
-		m.normal= eng.buffer()
-		m.normal.data(normal)
-		m.color = eng.buffer()
-		m.color.data(color)
+		var m = eng.model({
+			vertex: vertex, normal: normal, color: color })
 
 		return m;
 	}
