@@ -245,8 +245,31 @@ var marker_model = eng.model({
 
 marker_model.program = prog
 
+var quadmodel = eng.model({
+	vertex: [
+		[-1, -1, 0],
+		[1, -1, 0],
+		[-1, 1, 0],
+		[1, -1, 0],
+		[1, 1, 0],
+		[-1, 1, 0]],
+	normal: [
+		[0, 0, 1],
+		[0, 0, 1],
+		[0, 0, 1],
+		[0, 0, 1],
+		[0, 0, 1],
+		[0, 0, 1]],
+	color: [
+		[0.4, 0.8, 0.5],
+		[0.4, 0.8, 0.5],
+		[0.4, 0.8, 0.5],
+		[0.4, 0.8, 0.5],
+		[0.4, 0.8, 0.5],
+		[0.4, 0.8, 0.5]] })
 
-var quad_model = new model()
+quadmodel.program = prog
+
 
 function atan2(x, y) {
 	if(x > 0) return Math.atan(y/x)
@@ -260,7 +283,7 @@ function atan2(x, y) {
 
 roadmode.onclick = function(e) {
 	editmode.leave()
-	var curve, marker;
+	var curve, marker, control;
 
 	editmode.leave = function() {
 		eng.scene.objects.pop()
@@ -272,14 +295,6 @@ roadmode.onclick = function(e) {
 		var p = unprojecttoground(e)
 		var p2 = [p[0], p[1]]
 
-		var dir = [0, 20]
-		var mat = mat2.create()
-		mat2.identity(mat)
-		mat2.rotate(mat, mat, -marker.rotation[2])
-		vec2.transformMat2(dir, dir, mat)
-		vec2.add(dir, dir, marker.position)
-
-		curve.p[1] = dir
 		curve.p[2] = p2
 
 		var an = new anchor()
@@ -302,11 +317,13 @@ roadmode.onclick = function(e) {
 
 		var p2 = [p[0], p[1]]
 
+		eng.scene.objects.pop()
+
 		editmode.set('mousemove', curvemove)
 		editmode.set('click', doneclick)
 	}
 
-	var directionmove = function(e) {
+	var controlmove = function(e) {
 		var p = unprojecttoground(e)
 
 		var dir = vec2.create()
@@ -315,7 +332,13 @@ roadmode.onclick = function(e) {
 		
 		var angle = atan2(dir[0], dir[1]) + Math.PI / 2
 		marker.rotation[2] = angle
+
+		control.rotation[2] = angle + Math.PI / 4
+		control.position = p
+
+		curve.p[1] = p
 	}
+
 	
 	var positionset = function(e) {
 		if(e.button != 0) return
@@ -325,8 +348,14 @@ roadmode.onclick = function(e) {
 		var p2 = [p[0], p[1]]
 		curve = new bezier(p2.slice(), p2.slice(), p2.slice())
 		
+		control = new anchor()
+		control.model = quadmodel
+		controlmove(e)
+
+		eng.scene.objects.push(control)
+
 		editmode.set('click', begincurve)
-		editmode.set('mousemove', directionmove)
+		editmode.set('mousemove', controlmove)
 	}
 
 	var positionmove = function(e) {
