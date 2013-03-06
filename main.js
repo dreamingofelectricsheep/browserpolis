@@ -431,6 +431,7 @@ window.addEventListener('mousemove', function(e) {
 
 eng.canvas.oncontextmenu = function(e) { e.preventDefault() }
 
+window.ondrag = function(e) { e.preventDefault() }
 
 }
 
