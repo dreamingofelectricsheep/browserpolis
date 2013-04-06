@@ -1,6 +1,5 @@
-
-
 window.onload = function() {
+
 var body = document.getElementsByTagName('body')[0]
 
 var roadmode = tags.div({ class: 'button' }, 'Road')
@@ -321,6 +320,7 @@ roadmode.onclick = function(e) {
 
 		editmode.set('mousemove', curvemove)
 		editmode.set('click', doneclick)
+		curvemove(e)
 	}
 
 	var controlmove = function(e) {

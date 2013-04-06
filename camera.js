@@ -1,15 +1,19 @@
-function camera() {
+function camera()
+{
 	this.velocity = [0, 0]
 	this.position = [0, 0]
 	this.distance = -20
 	this.projection = mat4.create()
 	this.rotation = [-1, 0, 0]
 
-	mat4.perspective(this.projection, 45, window.innerWidth/window.innerHeight, 0.1, 1000)
+	mat4.perspective(this.projection, 45, window.innerWidth/window.innerHeight, 
+		0.1, 1000)
 }
 
-camera.prototype = {
-	update: function(elapsed) {
+camera.prototype = 
+{
+	update: function(elapsed)
+	{
 		var v = vec2.clone(this.velocity)
 		vec2.scale(v, v, - this.distance * elapsed / 1000 * 2)
 		var mat = mat2.create()
@@ -18,7 +22,8 @@ camera.prototype = {
 		vec2.transformMat2(v, v, mat)
 		vec2.add(this.position, this.position, v)
 	},
-	transform: function() {
+	transform: function()
+	{
 		var view = mat4.create()
 		mat4.identity(view)
 
@@ -28,5 +33,4 @@ camera.prototype = {
 		mat4.translate(view, view, [this.position[0], this.position[1], 0])
 		return view
 	}
-
 }
