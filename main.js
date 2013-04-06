@@ -20,117 +20,79 @@ var fs = eng.fragment_shader(fragtext)
 var prog = eng.program(vs, fs)
 
 
-var building_color= []
-for(var i = 0; i < 30; i++) building_color.push([0.8, 0.7, 0.9])
-
-var building_normal = [
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-	[0, -1, 0],
-
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-	[-1, 0, 0],
-
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-	[0, 1, 0],
-
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-	[1, 0, 0],
-
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1],
-	[0, 0, 1]
-]
-
-var building_vertex = [
-	[-1, -1, 0],
-	[1, -1, 0],
-	[1, -1, 5],
-
-	[-1, -1, 0],
-	[-1, -1, 5],
-	[1, -1, 5],
 
 
+function vector_sign(p1, p2, p3)
+{
+	return vec2.cross([], vec2.sub([], p1, p3), vec2.sub([], p2, p3))[2] < 0
+}
+
+function inside(p, v1, v2, v3)
+{
+
+	var b1 = vector_sign(p, v1, v2),
+		b2 = vector_sign(p, v2, v3),
+		b3 = vector_sign(p, v3, v1)
+
+	return ((b1 == b2) && (b2 == b3))
+}
 	
-	[-1, 1, 0],
-	[-1, -1, 0],
-	[-1, -1, 5],
 
-	[-1, -1, 5],
-	[-1, 1, 5],
-	[-1, 1, 0],
+function make_building(edges, height)
+{
+	var e = edges.slice(0),
+		vertices = [],
+		i = 0
 
+	while(e.length > 2)
+	{
+		i++
+		i = i % e.length
+		var trig = [e[i], e[(i+1) % e.length], e[(i+2) % e.length]]
 
-	
-	[1, 1, 0],
-	[1, 1, 5],
-	[-1, 1, 5],
+		if(vector_sign(trig[0], trig[1], trig[2]) == true)
+			break
 
-	[-1, 1, 0],
-	[-1, 1, 5],
-	[1, 1, 0],
+		var ear = true
+		
+		for(var j = (i + 3) % e.length; j != i; j = (j + 1) % e.length)
+		{
+			if(inside(e[j], trig[0], trig[1], trig[2]))
+			{
+				ear = false
+				break
+			}
+		}
 
-
-
-	[1, 1, 0],
-	[1, 1, 5],
-	[1, -1, 5],
-
-	[1, -1, 0],
-	[1, -1, 5],
-	[1, 1, 0],
-
-
-
-	[1, 1, 5],
-	[1, -1, 5],
-	[-1, 1, 5],
-
-	[1, -1, 5],
-	[-1, 1, 5],
-	[-1, -1, 5]
-]
-
-
-function buildingfactory() {
-	var mat = mat4.create()
-	mat4.identity(mat)
-	mat4.scale(mat, mat, [Math.random() * 0.5 + 0.8,
-		Math.random() * 0.5 + 0.8,
-		Math.random() * 0.5 + 0.8])
-
-
-	var vert = []
-	for(var i in building_vertex) {
-		var v = [0, 0, 0]
-		vec3.transformMat4(v, building_vertex[i], mat)
-		vert.push(v)
+		if(ear == true)
+		{
+			vertices.push(trig[0], trig[1], trig[2])
+			e.splice((i+1) % e.length, 1)
+		}
 	}
+		
+
+	var normal = [],
+		color = []
+
+	for(var i in vertices)
+	{
+		normal.push([0, 0, 1])
+		color.push([0.8, 0.7, 0.9])
+	}
+		
+		
 
 
-	var buildingmodel = eng.model({
-		vertex: vert,
-		normal: building_normal,
-		color: building_color })
+	if(vertices.length == 0) return undefined
+
+
+	var buildingmodel = eng.model(
+		{
+			vertex: vertices,
+			normal: normal,
+			color: color 
+		})
 
 	buildingmodel.program = prog
 
@@ -177,54 +139,6 @@ function unprojecttoground(e) {
 	return v2
 }
 
-var editmode = {
-	set: function(type, fn) {
-		this.unset(type)
-		eng.canvas.addEventListener(type, fn)
-		this[type] = fn
-	},
-	unset: function(type) {
-		eng.canvas.removeEventListener(type, this[type])	
-	},
-	leave: function() {}
-}
-
-buildingmode.onclick = function(e) {
-	editmode.leave()
-	editmode.leave = function() { 
-		if(tmp != undefined) eng.scene.objects.pop()
-		this.leave = function() {}
-	}
-
-	var tmp = undefined;
-	var move = function(e) {
-		if(tmp == undefined) return
-		tmp.position = unprojecttoground(e)
-	}
-
-	var click = function(e) {
-		if(e.button != 0) return
-		tmp = new anchor()
-		tmp.model = buildingfactory()
-		move(e)
-		eng.scene.objects.push(tmp)
-	}
-
-	click(e)
-
-	editmode.set('click', click)
-	editmode.set('mousemove', move)
-}
-
-window.addEventListener('keydown', function(e) {
-	if(e.keyCode == 27) {
-		editmode.leave()
-		editmode.unset('click')
-		editmode.unset('mousemove')
-	}
-})
-
-
 var marker_model = eng.model({
 	vertex: [
 		[-1, -1, 0],
@@ -270,7 +184,55 @@ var quadmodel = eng.model({
 quadmodel.program = prog
 
 
-function atan2(x, y) {
+var editmode = {
+	set: function(type, fn) {
+		this.unset(type)
+		eng.canvas.addEventListener(type, fn)
+		this[type] = fn
+	},
+	unset: function(type) {
+		eng.canvas.removeEventListener(type, this[type])	
+	},
+	leave: function() {}
+}
+
+buildingmode.onclick = function(e) {
+	editmode.leave()
+	editmode.leave = function() { 
+		eng.scene.objects.pop()
+		this.leave = function() {}
+	}
+
+	var edges = [],
+		building = new anchor()
+
+	eng.scene.objects.push(building)
+
+	var click = function(e) {
+		if(e.button != 0) return
+
+		var p = unprojecttoground(e)
+		edges.push(p)
+
+		building.model = make_building(edges, 0)
+	}
+
+	editmode.set('click', click)
+	editmode.unset('mousemove')
+}
+
+window.addEventListener('keydown', function(e) {
+	if(e.keyCode == 27) {
+		editmode.leave()
+		editmode.unset('click')
+		editmode.unset('mousemove')
+	}
+})
+
+
+
+function atan2(x, y)
+{
 	if(x > 0) return Math.atan(y/x)
 	if(y >= 0 && x < 0) return Math.atan(y/x) + Math.PI
 	if(y < 0 && x < 0) return Math.atan(y/x) - Math.PI
@@ -280,7 +242,8 @@ function atan2(x, y) {
 }
 
 
-roadmode.onclick = function(e) {
+roadmode.onclick = function(e)
+{
 	editmode.leave()
 	var curve, marker, control;
 
@@ -377,16 +340,20 @@ roadmode.onclick = function(e) {
 
 }
 
-window.addEventListener('mousedown', function(e) {
+window.addEventListener('mousedown', function(e)
+{
 	if(e.button != 1) return;
 	var x = e.clientX
 
-	var events = {
-		mousemove: function(e) {
+	var events =
+	{
+		mousemove: function(e)
+		{
 			eng.scene.camera.rotation[2] += (e.clientX - x) / 500
 			x = e.clientX
 		},
-		mouseup: function(e) {
+		mouseup: function(e)
+		{
 			for(var i in events)
 				window.removeEventListener(i, events[i])
 		}
@@ -396,21 +363,14 @@ window.addEventListener('mousedown', function(e) {
 		window.addEventListener(i, events[i]) 
 })
 
-window.onmousewheel = window.onwheel = function(e) {
+window.onmousewheel = window.onwheel = function(e)
+{
 	var d = e.wheelDelta
 	if(d == undefined) d = -e.deltaY * 30
-	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) - d / 1000)
+	eng.scene.camera.distance = -Math.exp(Math.log(-eng.scene.camera.distance) 
+		- d / 1000)
 }
 
-
-
-for(var i = 0; i < 10; i++) {
-		var tmp = new anchor()
-		tmp.model = buildingfactory()
-		tmp.position[0] = Math.random() * 15
-		tmp.position[1] = Math.random() * 15
-		eng.scene.objects.push(tmp)
-}
 	
 
 eng.draw()
@@ -423,9 +383,12 @@ window.addEventListener('mousemove', function(e) {
 	if(e.clientX < 100) x = 1 - e.clientX / 100
 	if(e.clientX > window.innerWidth - 100) x = (window.innerWidth-e.clientX) / 100 - 1
 	if(e.clientY < 100) y = 1 - e.clientY / 100
-	if(e.clientY > window.innerHeight - 100 && Math.abs(e.clientX - window.innerWidth / 2) > 200) y = (window.innerHeight-e.clientY) / 100 - 1
+	if(e.clientY > window.innerHeight - 100 && 
+		Math.abs(e.clientX - window.innerWidth / 2) > 200) 
+		y = (window.innerHeight-e.clientY) / 100 - 1
+
 	c.velocity[0] = x
-	c.velocity[1] = - y
+	c.velocity[1] = -y
 
 })
 

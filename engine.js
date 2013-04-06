@@ -27,8 +27,10 @@ engine.prototype = {
 		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
 
-		for(var i in this.scene.objects) {
+		for(var i in this.scene.objects)
+		{
 			var o = this.scene.objects[i]
+			if(o.model == undefined) continue
 			var prog = o.model.program
 
 			var view = this.scene.camera.transform()
@@ -135,8 +137,17 @@ buffer.prototype = {
 		this.bind()
 		this.items = d.length
 		this.subitems = d[0].length
+
 		var arr = []
-		for(var i in d) arr = arr.concat(d[i])
+
+		for(var i in d)
+		{
+			for(var j = 0; j < d[i].length; j++)
+			{
+				arr.push(d[i][j])
+			}
+		}
+
 		arr = new Float32Array(arr)
 
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, arr, this.gl.STATIC_DRAW)
