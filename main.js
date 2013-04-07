@@ -51,7 +51,7 @@ function make_building(edges, height)
 		var trig = [e[i], e[(i+1) % e.length], e[(i+2) % e.length]]
 
 		if(vector_sign(trig[0], trig[1], trig[2]) == true)
-			break
+			continue
 
 		var ear = true
 		
