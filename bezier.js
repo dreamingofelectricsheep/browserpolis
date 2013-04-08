@@ -1,18 +1,25 @@
 //Only quadratic curves are supported right now
 function bezier()
 {
-	this.p = arguments
+	this.p = Array.prototype.slice.call(arguments)
 }
 
 bezier.prototype = {
 	point: function(t)
 	{
-		var t1 = vec2.create()
-		var t2 = vec2.create()
-		vec2.lerp(t1, this.p[0], this.p[1], t)
-		vec2.lerp(t2, this.p[1], this.p[2], t)
-		vec2.lerp(t1, t1, t2, t)
-		return t1
+		var p = this.p.slice()
+
+		while(p.length > 1)
+		{
+			var a = []
+			for(var i = 0; i + 1 < p.length; i++)
+			{
+				a.push(vec2.lerp([], p[i], p[i + 1], t))
+			}
+			p = a
+		}
+
+		return p[0]
 	},
 	model: function(eng)
 	{

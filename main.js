@@ -248,7 +248,7 @@ roadmode.onclick = function(e)
 	var curve, marker, control;
 
 	editmode.leave = function() {
-		eng.scene.objects.pop()
+		//eng.scene.objects.pop()
 		this.leave = function() {}
 	}
 	
@@ -257,7 +257,7 @@ roadmode.onclick = function(e)
 		var p = unprojecttoground(e)
 		var p2 = [p[0], p[1]]
 
-		curve.p[2] = p2
+		curve.p[2] = curve.p[3] = p2
 
 		var an = new anchor()
 		an.model = curve.model(eng)
@@ -309,7 +309,7 @@ roadmode.onclick = function(e)
 		var p = unprojecttoground(e)
 
 		var p2 = [p[0], p[1]]
-		curve = new bezier(p2.slice(), p2.slice(), p2.slice())
+		curve = new bezier(p2.slice(), p2.slice(), p2.slice(), p2.slice())
 		
 		control = new anchor()
 		control.model = quadmodel
@@ -317,8 +317,10 @@ roadmode.onclick = function(e)
 
 		eng.scene.objects.push(control)
 
-		editmode.set('click', begincurve)
-		editmode.set('mousemove', controlmove)
+		//editmode.set('click', begincurve)
+		//editmode.set('mousemove', controlmove)
+		editmode.set('mousemove', curvemove)
+		editmode.set('click', doneclick)
 	}
 
 	var positionmove = function(e) {
@@ -327,7 +329,7 @@ roadmode.onclick = function(e)
 
 	var start = function(e) {
 		marker = new anchor()
-		marker.model = marker_model
+		marker.model = quadmodel
 		positionmove(e)
 
 		eng.scene.objects.push(marker)
