@@ -2,14 +2,15 @@ window.onload = function() {
 
 var body = document.getElementsByTagName('body')[0]
 
-var roadmode = tags.div({ class: 'button' }, 'Road')
-var buildingmode = tags.div({ class: 'button' }, 'Building')
+var buttons = tags.div({ class: 'button-box' }, 
+	tags.div({ id: 'road', class: 'button' }, 'Road'), 
+	tags.div({ id: 'building', class: 'button' }, 'Building'))
 
+body.appendChild(buttons)
 
 
 var eng = new engine(body)
 
-body.appendChild(tags.div({ class: 'button-box' }, buildingmode, roadmode))
 
 var vertext = document.getElementById('shader-vs').innerHTML
 var fragtext = document.getElementById('shader-fs').innerHTML
@@ -103,18 +104,23 @@ function make_building(edges, height)
 
 eng.scene = {
 	camera: new camera(),
-	objects: []
+	objects: {}
 }
 
 var city =
 {
-	roads: [],
+	roads: {},
 	buildings: {}
 }
 
-function unprojecttoground(e) {
+var __guid = 0
+function guid()
+{
+	return __guid++;
+}
 
-	
+function unprojecttoground(e)
+{
 	var camera = eng.scene.camera
 	var cam = camera.transform()
 
@@ -183,7 +189,7 @@ var editmode = {
 	leave: function() {}
 }
 
-buildingmode.onclick = function(e) {
+buttons.$building.onclick = function(e) {
 	editmode.leave()
 	editmode.leave = function() { 
 		eng.scene.objects.pop()
@@ -229,35 +235,41 @@ function atan2(x, y)
 }
 
 
-roadmode.onclick = function(e)
+buttons.$road.onclick = function(e)
 {
 	editmode.leave()
 	var curve, marker, control;
 
 	editmode.leave = function() {
-		//eng.scene.objects.pop()
+		delete eng.scene.objects['marker']
+		delete eng.scene.objects['road']
 		this.leave = function() {}
 	}
 	
 
-	var curvemove = function(e) {
-		var p = unprojecttoground(e)
+	var curvemove = function(e)
+	{
+		positionmove(e)
+		var p = marker.position
+
 		var p2 = [p[0], p[1]]
 
 		curve.p[2] = curve.p[3] = p2
 
-		var an = new anchor()
-		an.model = curve.model(eng)
-		an.model.program = prog
-		eng.scene.objects.pop()
-		eng.scene.objects.push(an)
+		var a = eng.scene.objects['road']
+
+		a.model = curve.model(eng)
+		a.model.program = prog
 	}
 
 	var doneclick = function(e) {
 		if(e.button != 0) return
-		city.roads.push(curve)
-	
-		start(e)
+		
+		var id = guid()
+		city.roads[id] = curve
+		eng.scene.objects[id] = eng.scene.objects['road']
+
+		buttons.$road.click()
 	}
 
 	var begincurve = function(e) {
@@ -267,7 +279,6 @@ roadmode.onclick = function(e)
 
 		var p2 = [p[0], p[1]]
 
-		eng.scene.objects.pop()
 
 		editmode.set('mousemove', curvemove)
 		editmode.set('click', doneclick)
@@ -300,12 +311,12 @@ roadmode.onclick = function(e)
 
 		var p2 = [p[0], p[1]]
 		curve = new bezier(p2.slice(), p2.slice(), p2.slice(), p2.slice())
-		
-		control = new anchor()
-		control.model = quadmodel
-		controlmove(e)
 
-		eng.scene.objects.push(control)
+		var an = new anchor()
+		an.model = curve.model(eng)
+		an.model.program = prog
+
+		eng.scene.objects['road'] = an
 
 		//editmode.set('click', begincurve)
 		//editmode.set('mousemove', controlmove)
@@ -346,7 +357,7 @@ roadmode.onclick = function(e)
 		marker.model = quadmodel
 		positionmove(e)
 
-		eng.scene.objects.push(marker)
+		eng.scene.objects['marker'] = marker
 
 		editmode.set('click', positionset)
 		editmode.set('mousemove', positionmove)

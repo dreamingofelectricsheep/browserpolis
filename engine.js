@@ -145,7 +145,9 @@ buffer.prototype = {
 	data: function(d) {
 		this.bind()
 		this.items = d.length
-		this.subitems = d[0].length
+		
+		if(d.length > 0)
+			this.subitems = d[0].length
 
 		var arr = []
 
