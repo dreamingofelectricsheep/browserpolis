@@ -85,6 +85,22 @@ bezier.prototype = {
 			})
 
 		return m
+	},
+	nearest: function(p)
+	{
+		var a =
+		{
+			x: p[0],
+			y: p[1]
+		}
+
+		var curve = []
+		for(var i in this.p)
+		{
+			curve.push({ x: this.p[i][0], y: this.p[i][1]})
+		}
+
+		return jsBezier.distanceFromCurve(a, curve)
 	}
 }
 

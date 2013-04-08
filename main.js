@@ -106,6 +106,12 @@ eng.scene = {
 	objects: []
 }
 
+var city =
+{
+	roads: [],
+	buildings: {}
+}
+
 function unprojecttoground(e) {
 
 	
@@ -139,33 +145,14 @@ function unprojecttoground(e) {
 	return v2
 }
 
-var marker_model = eng.model({
-	vertex: [
-		[-1, -1, 0],
-		[1, -1, 0],
-		[0, 2, 0]
-	],
-	color: [
-		[0.4, 1.0, 0.3],
-		[0.4, 1.0, 0.3],
-		[0.4, 1.0, 0.3]
-	], 
-	normal: [
-		[0, 0, 1],
-		[0, 0, 1],
-		[0, 0, 1]
-	]})
-
-marker_model.program = prog
-
 var quadmodel = eng.model({
 	vertex: [
-		[-1, -1, 0],
-		[1, -1, 0],
-		[-1, 1, 0],
-		[1, -1, 0],
-		[1, 1, 0],
-		[-1, 1, 0]],
+		[-1, -1, 0.1],
+		[1, -1, 0.1],
+		[-1, 1, 0.1],
+		[1, -1, 0.1],
+		[1, 1, 0.1],
+		[-1, 1, 0.1]],
 	normal: [
 		[0, 0, 1],
 		[0, 0, 1],
@@ -268,6 +255,7 @@ roadmode.onclick = function(e)
 
 	var doneclick = function(e) {
 		if(e.button != 0) return
+		city.roads.push(curve)
 	
 		start(e)
 	}
@@ -306,7 +294,9 @@ roadmode.onclick = function(e)
 	var positionset = function(e) {
 		if(e.button != 0) return
 
-		var p = unprojecttoground(e)
+		positionmove(e)
+
+		var p = marker.position
 
 		var p2 = [p[0], p[1]]
 		curve = new bezier(p2.slice(), p2.slice(), p2.slice(), p2.slice())
@@ -324,7 +314,31 @@ roadmode.onclick = function(e)
 	}
 
 	var positionmove = function(e) {
-		marker.position = unprojecttoground(e)
+		var p = unprojecttoground(e)
+
+
+		var pt, d = 3
+
+		for(var i in city.roads)
+		{
+			var r = city.roads[i].nearest(p)
+			
+			if(r.distance < d)
+			{
+				d = r.distance
+				pt = { road: city.roads[i], t: r.location }
+			}
+		}
+
+			
+		if(d < 3)
+		{
+			p = pt.road.point(pt.t)
+			p[2] = 0
+		}
+
+		marker.position = p
+
 	}
 
 	var start = function(e) {
