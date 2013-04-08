@@ -1,3 +1,15 @@
+(function()
+{
+
+each = function(obj, f)
+{
+	for(var i in obj)
+	{
+		f(obj[i], i, obj)
+	}
+}
+})()
+
 window.onload = function() {
 
 var body = document.getElementsByTagName('body')[0]
@@ -19,6 +31,7 @@ var vs = eng.vertex_shader(vertext)
 var fs = eng.fragment_shader(fragtext)
 
 var prog = eng.program(vs, fs)
+
 
 
 
@@ -298,9 +311,8 @@ buttons.$road.onclick = function(e)
 			}
 		}
 
-		var l = [ctrla, ctrlb, startmarker, marker]
-		for(var i in l)
-			check(l[i])
+		each([ctrla, ctrlb, startmarker, marker], 
+			function(v) { check(v) })
 	}
 
 	var curvemove = function(e)
@@ -349,6 +361,9 @@ buttons.$road.onclick = function(e)
 
 		align(ctrla, ctrla.next)
 		align(ctrlb, ctrlb.next)
+
+		curve.p[1] = ctrla.position
+		curve.p[2] = ctrlb.position
 
 		editmode.set('click', controlclick)
 		editmode.set('mousemove', controlmove)
