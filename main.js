@@ -290,14 +290,17 @@ buttons.$road.onclick = function(e)
 			return
 		}
 
-		if(vec2.distance(p, ctrla.position) < 1)
+		var check = function(obj)
 		{
-			focus = ctrla
+			if(vec2.distance(p, obj.position) < 1)
+			{
+				focus = obj
+			}
 		}
-		if(vec2.distance(p, ctrlb.position) < 1)
-		{
-			focus = ctrlb
-		}
+
+		var l = [ctrla, ctrlb, startmarker, marker]
+		for(var i in l)
+			check(l[i])
 	}
 
 	var curvemove = function(e)
@@ -328,14 +331,18 @@ buttons.$road.onclick = function(e)
 		ctrla.position = curve.point(0.3)
 		ctrla.position[2] = 0
 		ctrla.i = 1
+		startmarker.i = 0
 		ctrla.next = startmarker
+		startmarker.next = ctrla
 
 		ctrlb = new anchor()
 		ctrlb.model = quadmodel
 		ctrlb.position = curve.point(0.7)
 		ctrlb.position[2] = 0
 		ctrlb.i = 2
+		marker.i = 3
 		ctrlb.next = marker
+		marker.next = ctrlb
 
 		eng.scene.objects['ctrlb'] = ctrlb
 		eng.scene.objects['ctrla'] = ctrla
