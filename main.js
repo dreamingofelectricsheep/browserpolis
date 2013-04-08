@@ -238,14 +238,67 @@ function atan2(x, y)
 buttons.$road.onclick = function(e)
 {
 	editmode.leave()
-	var curve, marker, control;
+	var curve, marker, startmarker, ctrla, ctrlb, focus = undefined;
 
 	editmode.leave = function() {
 		delete eng.scene.objects['marker']
+		delete eng.scene.objects['ctrlb']
+		delete eng.scene.objects['ctrla']
+		delete eng.scene.objects['startmarker']
 		delete eng.scene.objects['road']
 		this.leave = function() {}
 	}
+
+	var done = function(e)
+	{
+		buttons.$road.click()
+	}
+
+	var align = function(a, b)
+	{
+		var dir = vec2.sub([], a.position, b.position)
+		vec2.normalize(dir, dir)
+		
+		var angle = atan2(dir[0], dir[1]) + Math.PI / 4
+		a.rotation[2] = b.rotation[2] = angle
+	}
 	
+	var controlmove = function(e)
+	{
+		if(focus == undefined) return
+
+		var p = unprojecttoground(e)
+		var p2 = [p[0], p[1], 0]
+
+		curve.p[focus.i] = p2
+		focus.position = p2
+
+		var a = eng.scene.objects['road']
+		a.model = curve.model(eng)
+		a.model.program = prog
+
+		align(focus, focus.next)
+	}
+
+	var controlclick = function(e)
+	{
+		var p = unprojecttoground(e)
+		
+		if(focus != undefined)
+		{
+			focus = undefined
+			return
+		}
+
+		if(vec2.distance(p, ctrla.position) < 1)
+		{
+			focus = ctrla
+		}
+		if(vec2.distance(p, ctrlb.position) < 1)
+		{
+			focus = ctrlb
+		}
+	}
 
 	var curvemove = function(e)
 	{
@@ -257,9 +310,10 @@ buttons.$road.onclick = function(e)
 		curve.p[2] = curve.p[3] = p2
 
 		var a = eng.scene.objects['road']
-
 		a.model = curve.model(eng)
 		a.model.program = prog
+
+		align(marker, startmarker)
 	}
 
 	var doneclick = function(e) {
@@ -269,7 +323,28 @@ buttons.$road.onclick = function(e)
 		city.roads[id] = curve
 		eng.scene.objects[id] = eng.scene.objects['road']
 
-		buttons.$road.click()
+		ctrla = new anchor()
+		ctrla.model = quadmodel
+		ctrla.position = curve.point(0.3)
+		ctrla.position[2] = 0
+		ctrla.i = 1
+		ctrla.next = startmarker
+
+		ctrlb = new anchor()
+		ctrlb.model = quadmodel
+		ctrlb.position = curve.point(0.7)
+		ctrlb.position[2] = 0
+		ctrlb.i = 2
+		ctrlb.next = marker
+
+		eng.scene.objects['ctrlb'] = ctrlb
+		eng.scene.objects['ctrla'] = ctrla
+
+		align(ctrla, ctrla.next)
+		align(ctrlb, ctrlb.next)
+
+		editmode.set('click', controlclick)
+		editmode.set('mousemove', controlmove)
 	}
 
 	var begincurve = function(e) {
@@ -285,21 +360,6 @@ buttons.$road.onclick = function(e)
 		curvemove(e)
 	}
 
-	var controlmove = function(e) {
-		var p = unprojecttoground(e)
-
-		var dir = vec2.create()
-		vec2.sub(dir, marker.position, p)
-		vec2.normalize(dir,dir)
-		
-		var angle = atan2(dir[0], dir[1]) + Math.PI / 2
-		marker.rotation[2] = angle
-
-		control.rotation[2] = angle + Math.PI / 4
-		control.position = p
-
-		curve.p[1] = p
-	}
 
 	
 	var positionset = function(e) {
@@ -318,8 +378,13 @@ buttons.$road.onclick = function(e)
 
 		eng.scene.objects['road'] = an
 
-		//editmode.set('click', begincurve)
-		//editmode.set('mousemove', controlmove)
+		startmarker = new anchor()
+		startmarker.model = quadmodel
+		startmarker.position = marker.position
+
+		eng.scene.objects['startmarker'] = startmarker
+
+
 		editmode.set('mousemove', curvemove)
 		editmode.set('click', doneclick)
 	}
