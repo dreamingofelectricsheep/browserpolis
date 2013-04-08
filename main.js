@@ -251,20 +251,20 @@ function atan2(x, y)
 buttons.$road.onclick = function(e)
 {
 	editmode.leave()
-	var curve, marker, startmarker, ctrla, ctrlb, focus = undefined;
+	var curve, id = undefined, marker = [], focus = undefined;
 
-	editmode.leave = function() {
-		delete eng.scene.objects['marker']
-		delete eng.scene.objects['ctrlb']
-		delete eng.scene.objects['ctrla']
-		delete eng.scene.objects['startmarker']
+	editmode.leave = function() 
+	{
+		each(marker, function(v, k)
+			{
+				delete eng.scene.objects['marker' + k]
+			})
+
+		if(id != undefined)
+			city.roads[id] = curve
+
 		delete eng.scene.objects['road']
 		this.leave = function() {}
-	}
-
-	var done = function(e)
-	{
-		buttons.$road.click()
 	}
 
 	var align = function(a, b)
@@ -279,18 +279,16 @@ buttons.$road.onclick = function(e)
 	var controlmove = function(e)
 	{
 		if(focus == undefined) return
+	
+		positionmove(e)
 
-		var p = unprojecttoground(e)
-		var p2 = [p[0], p[1], 0]
-
-		curve.p[focus.i] = p2
-		focus.position = p2
+		curve.p[focus] = marker[focus].position
 
 		var a = eng.scene.objects['road']
 		a.model = curve.model(eng)
 		a.model.program = prog
 
-		align(focus, focus.next)
+		align(marker[focus], marker[focus].sibling)
 	}
 
 	var controlclick = function(e)
@@ -303,85 +301,52 @@ buttons.$road.onclick = function(e)
 			return
 		}
 
-		var check = function(obj)
-		{
-			if(vec2.distance(p, obj.position) < 1)
+		each(marker, function(v, k)
 			{
-				focus = obj
-			}
-		}
-
-		each([ctrla, ctrlb, startmarker, marker], 
-			function(v) { check(v) })
-	}
-
-	var curvemove = function(e)
-	{
-		positionmove(e)
-		var p = marker.position
-
-		var p2 = [p[0], p[1]]
-
-		curve.p[2] = curve.p[3] = p2
-
-		var a = eng.scene.objects['road']
-		a.model = curve.model(eng)
-		a.model.program = prog
-
-		align(marker, startmarker)
+				if(vec2.distance(p, v.position) < 2)
+					focus = k
+			})
 	}
 
 	var doneclick = function(e) {
 		if(e.button != 0) return
 		
-		var id = guid()
-		city.roads[id] = curve
+		id = guid()
 		eng.scene.objects[id] = eng.scene.objects['road']
 
-		ctrla = new anchor()
-		ctrla.model = quadmodel
-		ctrla.position = curve.point(0.3)
-		ctrla.position[2] = 0
-		ctrla.i = 1
-		startmarker.i = 0
-		ctrla.next = startmarker
-		startmarker.next = ctrla
+		marker[1].sibling = marker[0]
+		marker[0].sibling = marker[1]
+		marker[3].sibling = marker[2]
+		marker[2].sibling = marker[3]
 
-		ctrlb = new anchor()
-		ctrlb.model = quadmodel
-		ctrlb.position = curve.point(0.7)
-		ctrlb.position[2] = 0
-		ctrlb.i = 2
-		marker.i = 3
-		ctrlb.next = marker
-		marker.next = ctrlb
+		each([1, 2], function(v) 
+			{ 
+				marker[v].position = curve.point(v/3)
+				marker[v].position[2] = 0
+				eng.scene.objects['marker' + v] = marker[v]
+				align(marker[v], marker[v].sibling)
+				curve.p[v] = marker[v].position
+			})
 
-		eng.scene.objects['ctrlb'] = ctrlb
-		eng.scene.objects['ctrla'] = ctrla
-
-		align(ctrla, ctrla.next)
-		align(ctrlb, ctrlb.next)
-
-		curve.p[1] = ctrla.position
-		curve.p[2] = ctrlb.position
+		focus = undefined
 
 		editmode.set('click', controlclick)
 		editmode.set('mousemove', controlmove)
 	}
 
-	var begincurve = function(e) {
-		if(e.button != 0) return
 
-		var p = unprojecttoground(e)
+	var curvemove = function(e)
+	{
+		positionmove(e)
 
-		var p2 = [p[0], p[1]]
+		curve.p[2] = curve.p[3] = marker[focus].position
 
+		var a = eng.scene.objects['road']
+		a.model = curve.model(eng)
+		a.model.program = prog
 
-		editmode.set('mousemove', curvemove)
-		editmode.set('click', doneclick)
-		curvemove(e)
+		align(marker[focus], marker[0])
 	}
-
 
 	
 	var positionset = function(e) {
@@ -389,9 +354,9 @@ buttons.$road.onclick = function(e)
 
 		positionmove(e)
 
-		var p = marker.position
-
+		var p = marker[0].position
 		var p2 = [p[0], p[1]]
+
 		curve = new bezier(p2.slice(), p2.slice(), p2.slice(), p2.slice())
 
 		var an = new anchor()
@@ -400,11 +365,10 @@ buttons.$road.onclick = function(e)
 
 		eng.scene.objects['road'] = an
 
-		startmarker = new anchor()
-		startmarker.model = quadmodel
-		startmarker.position = marker.position
 
-		eng.scene.objects['startmarker'] = startmarker
+		eng.scene.objects['marker3'] = marker[3]
+		focus = 3
+		marker[3].position = marker[0].position
 
 
 		editmode.set('mousemove', curvemove)
@@ -413,7 +377,6 @@ buttons.$road.onclick = function(e)
 
 	var positionmove = function(e) {
 		var p = unprojecttoground(e)
-
 
 		var pt, d = 3
 
@@ -427,7 +390,6 @@ buttons.$road.onclick = function(e)
 				pt = { road: city.roads[i], t: r.location }
 			}
 		}
-
 			
 		if(d < 3)
 		{
@@ -435,16 +397,22 @@ buttons.$road.onclick = function(e)
 			p[2] = 0
 		}
 
-		marker.position = p
-
+		marker[focus].position = p
 	}
 
-	var start = function(e) {
-		marker = new anchor()
-		marker.model = quadmodel
+	var start = function(e)
+	{
+		for(var i = 0; i < 4; i++)
+		{
+			marker[i] = new anchor()
+			marker[i].model = quadmodel
+		}
+		
+		focus = 0
+
 		positionmove(e)
 
-		eng.scene.objects['marker'] = marker
+		eng.scene.objects['marker0'] = marker[0]
 
 		editmode.set('click', positionset)
 		editmode.set('mousemove', positionmove)
