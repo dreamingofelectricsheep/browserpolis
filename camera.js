@@ -5,9 +5,12 @@ function camera()
 	this.distance = -20
 	this.projection = mat4.create()
 	this.rotation = [-1, 0, 0]
+	this.fov = 45
+	this.aspect = window.innerWidth / window.innerHeight
+	this.near = 0.1
+	this.far = 1000
 
-	mat4.perspective(this.projection, 45, window.innerWidth/window.innerHeight, 
-		0.1, 1000)
+	this.updateprojection()
 }
 
 camera.prototype = 
@@ -21,6 +24,13 @@ camera.prototype =
 		mat2.rotate(mat, mat, this.rotation[2])
 		vec2.transformMat2(v, v, mat)
 		vec2.add(this.position, this.position, v)
+
+		this.updateprojection()
+	},
+	updateprojection: function()
+	{
+		mat4.perspective(this.projection, this.fov, this.aspect, 
+			this.near, this.far)
 	},
 	transform: function()
 	{

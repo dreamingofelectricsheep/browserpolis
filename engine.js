@@ -17,11 +17,20 @@ function engine(parent) {
 
 
 
-engine.prototype = {
-	draw: function(last) {
+engine.prototype =
+{
+	draw: function(last)
+	{
+		var x = window.innerWidth,
+			y = window.innerHeight
+		
+		this.canvas.width = x
+		this.canvas.height = y
+
+		this.scene.camera.aspect = x/y
 		
 		var time = new Date().getTime()
-		if(last == undefined) last = 0
+		if(last == undefined) last = time
 		this.scene.camera.update(time - last)
 
 		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
