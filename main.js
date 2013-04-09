@@ -3,11 +3,43 @@
 
 each = function(obj, f)
 {
-	for(var i in obj)
-	{
-		f(obj[i], i, obj)
-	}
+	if(obj instanceof Array)
+		for(var i = 0; i < obj.length; i++)
+			f(obj[i], i, obj)
+	else
+		for(var i in obj)
+			f(obj[i], i, obj)
 }
+
+range = function()
+{
+	var r = [],
+		step = 1,
+		start = 0,
+		end = 0
+
+	switch(arguments.length)
+	{
+		case 1:
+			end = arguments[0]
+			break
+		case 2:
+			start = arguments[0]
+			end = arguments[1]
+			break
+		case 3:
+			start = arguments[0]
+			end = arguments[1]
+			step = arguments[2]
+			break
+	}
+	
+	for(var i = start; i < end; i += step)
+		r.push(i)
+
+	return r
+}
+
 })()
 
 window.onload = function() {
@@ -189,6 +221,45 @@ var quadmodel = eng.model({
 
 quadmodel.program = prog
 
+
+
+var makecircle = function(r, subdivisions)
+{
+	var c = [0, 0, 0.1],
+		p = [r, 0, 0.1],
+		pts = [p]
+
+	each(range(1, subdivisions), function(i)
+		{
+			var rot = mat2.rotate([], mat2.identity([]), 2 * Math.PI / subdivisions * i)
+			pts.push(vec2.transformMat2(vec3.create(), p, rot))
+		})
+
+
+	var vertices = []
+	each(pts, function(pt) { pt[2] = 0.1 })
+
+	each(pts, function(pt, i)
+		{
+			vertices.push(c, pts[i], pts[(i + 1) % pts.length])
+		})
+
+	var colors = [], normals = []
+
+	each(vertices, function()
+		{
+			colors.push([0.2, 0.9, 0.7])
+			normals.push([0, 0, 1])
+		})
+
+
+	return eng.model({ vertex: vertices, color: colors, normal: normals })
+}
+			
+
+var circlemodel = makecircle(0.5, 64)
+circlemodel.program = prog
+	
 
 var editmode = {
 	set: function(type, fn) {
@@ -405,7 +476,7 @@ buttons.$road.onclick = function(e)
 		for(var i = 0; i < 4; i++)
 		{
 			marker[i] = new anchor()
-			marker[i].model = quadmodel
+			marker[i].model = circlemodel
 		}
 		
 		focus = 0

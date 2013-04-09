@@ -1,8 +1,0 @@
-Add higher order bezier curves
-Ability to specify and change control points on the fly
-Selecting displayed buildings/control points/curves
-Roads should be a list of rectangles instead of the weird triangle strip
-Adaptive tesselation of bezier curves
-Pipes!
-Multiple layers
-Curves that connect to each other (snap?)

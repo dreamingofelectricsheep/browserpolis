@@ -27,7 +27,6 @@ bezier.prototype = {
 
 		for(var i = 0; i < this.p.length - 1; i++)
 		{
-		
 			l += vec2.length(vec2.sub([], this.p[i], this.p[i + 1]))
 		}
 
@@ -48,7 +47,7 @@ bezier.prototype = {
 			return p
 		}
 	
-		for(var i = 0; i-1 < l; i++)
+		for(var i = 0; i < l; i++)
 		{
 			var p2 = this.point(i/l),
 				p1 = this.point((i+1)/l)
@@ -57,56 +56,61 @@ bezier.prototype = {
 		
 			points.push(
 				[
-					[p2[0] + p[0], p2[1] + p[1], 0],
-					[p2[0] - p[0], p2[1] - p[1], 0]
+					vec2.add([], p2, p),
+					vec2.sub([], p2, p)
 				])
+
+			if(i + 1 == l)
+				points.push([
+					vec2.add([], p1, p),
+					vec2.sub([], p1, p)])
 		}
 
 		for(var i = 1; i < points.length; i++)
 		{
 			vertex.push(
-				points[i-1][0],
-				points[i-1][1],
-				points[i][0],
-
 				points[i][0],
 				points[i][1],
-				points[i-1][1]
+				points[i-1][0],
+
+				points[i-1][0],
+				points[i-1][1],
+				points[i][1]
 			)
 		}
+
+		for(var i = 0; i < vertex.length; i++)
+			vertex[i][2] = 0
 
 		if(l != 0)
 		{
 			var halfcircle = function(ps)
 			{
-				var mid = vec2.lerp([], ps[0], ps[1], 0.5)
-				var p = vec2.sub([], ps[0], mid)
+				var mid = vec2.lerp(vec3.create(), ps[0], ps[1], 0.5)
+				var p = vec2.sub(vec3.create(), ps[0], mid)
 
 				var subdiv = 64
 
 				var rot = mat2.create()
 				mat2.identity(rot)
-				mat2.rotate(rot, rot, -Math.PI/subdiv*2)
+				mat2.rotate(rot, rot, -Math.PI/subdiv)
 
 				var fan = [p]
 				
 				for(var i = 0; i < subdiv; i++)
-					fan.push(vec2.transformMat2([], fan[i], rot))
+					fan.push(vec2.transformMat2(vec3.create(), fan[i], rot))
 
 				for(var i in fan) 
 					vec2.add(fan[i], mid, fan[i])
 
 				for(var i = 0; i < subdiv; i++)
 				{
-					vertex.push(
-							[mid[0], mid[1], 0],
-							[fan[i][0], fan[i][1], 0],
-							[fan[i+1][0], fan[i+1][1], 0])
+					vertex.push(mid, fan[i], fan[i + 1])
 				}
 			}
 
 			halfcircle(points[0])
-			halfcircle(points[points.length-1])
+			halfcircle(points[points.length-1].reverse())
 		}
 
 		
