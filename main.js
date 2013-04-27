@@ -2,11 +2,6 @@ module('mainblob', function(tags) {
 
 var body = document.getElementsByTagName('body')[0]
 
-var buttons = tags.div({ class: 'button-box' }, 
-	tags.div({ name: 'road', class: 'button' }, 'Road'), 
-	tags.div({ name: 'building', class: 'button' }, 'Building'))
-
-body.appendChild(buttons)
 
 
 var eng = new engine(body)
@@ -229,7 +224,7 @@ var editmode = {
 	leave: function() {}
 }
 
-buttons.$building.onclick = function(e) {
+var menu_building = function(e) {
 	editmode.leave()
 	editmode.leave = function() { 
 		eng.scene.objects.pop()
@@ -275,7 +270,7 @@ function atan2(x, y)
 }
 
 
-buttons.$road.onclick = function(e)
+var menu_road = function(e)
 {
 	editmode.leave()
 	var curve, id = undefined, marker = [], focus = undefined;
@@ -472,9 +467,39 @@ window.addEventListener('mousedown', function(e)
 		window.addEventListener(i, events[i]) 
 })
 
-window.addEventListener('mousedown', function(e) 
+window.addEventListener('mouseup', function(e) 
 {
+	if(e.button != 2) return
 
+	var menu = tags.ul({ class: 'menu',
+		style: 
+			{ 
+				left: e.clientX,
+				top: e.clientY
+			},
+		},
+		tags.li({ name: 'road' }, 'Road'),
+		tags.li({ name: 'building' }, 'Building'))
+
+	for(var i = 0; i < menu.children.length; i++)
+	{
+		var angle = 30/2 + (i - menu.children.length/2) * 30
+	}
+
+	menu.$road.onclick = menu_road
+
+	tags.append(body, menu)
+
+	var call = function(e)
+	{
+		window.removeEventListener('mouseup', call)
+
+		setTimeout(function() {
+				body.removeChild(menu);
+			}, 100)
+	}
+	
+	window.addEventListener('mouseup', call)
 })
 
 window.onmousewheel = window.onwheel = function(e)
@@ -497,9 +522,7 @@ window.addEventListener('mousemove', function(e) {
 	if(e.clientX < 100) x = 1 - e.clientX / 100
 	if(e.clientX > window.innerWidth - 100) x = (window.innerWidth-e.clientX) / 100 - 1
 	if(e.clientY < 100) y = 1 - e.clientY / 100
-	if(e.clientY > window.innerHeight - 100 && 
-		Math.abs(e.clientX - window.innerWidth / 2) > 200) 
-		y = (window.innerHeight-e.clientY) / 100 - 1
+	if(e.clientY > window.innerHeight - 100) y = (window.innerHeight-e.clientY) / 100 - 1
 
 	c.velocity[0] = x
 	c.velocity[1] = -y
