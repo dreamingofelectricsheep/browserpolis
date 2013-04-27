@@ -1,0 +1,3 @@
+[submodule "tags"]
+	path = tags
+	url = git@github.com:dreamingofelectricsheep/tags.js.git

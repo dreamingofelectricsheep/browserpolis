@@ -1,54 +1,10 @@
-(function()
-{
-
-each = function(obj, f)
-{
-	if(obj instanceof Array)
-		for(var i = 0; i < obj.length; i++)
-			f(obj[i], i, obj)
-	else
-		for(var i in obj)
-			f(obj[i], i, obj)
-}
-
-range = function()
-{
-	var r = [],
-		step = 1,
-		start = 0,
-		end = 0
-
-	switch(arguments.length)
-	{
-		case 1:
-			end = arguments[0]
-			break
-		case 2:
-			start = arguments[0]
-			end = arguments[1]
-			break
-		case 3:
-			start = arguments[0]
-			end = arguments[1]
-			step = arguments[2]
-			break
-	}
-	
-	for(var i = start; i < end; i += step)
-		r.push(i)
-
-	return r
-}
-
-})()
-
-window.onload = function() {
+module('mainblob', function(tags) {
 
 var body = document.getElementsByTagName('body')[0]
 
 var buttons = tags.div({ class: 'button-box' }, 
-	tags.div({ id: 'road', class: 'button' }, 'Road'), 
-	tags.div({ id: 'building', class: 'button' }, 'Building'))
+	tags.div({ name: 'road', class: 'button' }, 'Road'), 
+	tags.div({ name: 'building', class: 'button' }, 'Building'))
 
 body.appendChild(buttons)
 
@@ -516,6 +472,11 @@ window.addEventListener('mousedown', function(e)
 		window.addEventListener(i, events[i]) 
 })
 
+window.addEventListener('mousedown', function(e) 
+{
+
+})
+
 window.onmousewheel = window.onwheel = function(e)
 {
 	var d = e.wheelDelta
@@ -549,5 +510,5 @@ eng.canvas.oncontextmenu = function(e) { e.preventDefault() }
 
 window.ondrag = function(e) { e.preventDefault() }
 
-}
 
+})
